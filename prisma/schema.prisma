@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  password         String?
+  avatar           String? // For avatar (from Google or custom upload)
+  provider         String? // "credentials" or "google"
+  role             Role?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  teacherClasses   Class[]  @relation("teacherClasses")
+  studentClasses   Class[]  @relation("studentClasses")
+  quizzes          Quiz[]   @relation("teacherQuizzes") // <-- This connects back to Quiz.teacher
+  submittedQuizzes Quiz[]   @relation("studentClasses")
+
+  lessons Lesson[] @relation("teacherLessons")
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum LessonStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED // Optional: for soft deletion or old versions
+}
+
+model Class {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  key         String  @unique // random key string students 
+  teacherId   String // This connects to a teacher
+  teacher     User    @relation("teacherClasses", fields: [teacherId], references: [id]) // ✅ Then use it in relation
+
+  students  User[]      @relation("studentClasses")
+  lessons   Lesson[]
+  quizzes   Quiz[]
+  materials Materials[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Lesson {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+
+  content String? // Store lesson content (HTML or JSON from editor)
+  status  LessonStatus @default(DRAFT) // New: draft or published
+
+  teacher   User   @relation("teacherLessons", fields: [teacherId], references: [id])
+  teacherId String
+
+  class     Class       @relation(fields: [classId], references: [id])
+  classId   String
+  materials Materials[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+model Quiz {
+  id        String @id @default(cuid())
+  title     String
+  teacherId String // This connects to a teacher
+  teacher   User   @relation("teacherQuizzes", fields: [teacherId], references: [id])
+  class     Class  @relation(fields: [classId], references: [id])
+  classId   String
+
+  dueDate     DateTime?
+  duration    Int? // in minutes
+  submissions User[]    @relation("studentClasses")
+
+  questions Question[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Question {
+  id        String   @id @default(cuid())
+  text      String
+  imageUrl  String? // Optional image
+  answers   Answer[] // List of options
+  correct   Int // Index of correct answer in answers[]
+  quiz      Quiz     @relation(fields: [quizId], references: [id])
+  quizId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  text       String
+  index      Int
+  question   Question @relation(fields: [questionId], references: [id])
+  questionId String
+}
+
+model Materials {
+  id        String   @id @default(cuid())
+  name      String
+  fileUrl   String
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  lessonId  String
+  createdAt DateTime @default(now())
+  Class     Class?   @relation(fields: [classId], references: [id])
+  classId   String?
+}
