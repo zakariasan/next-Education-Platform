@@ -36,7 +36,7 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-blue-800 bg-clip-text text-transparent">
-                EduPlatform
+                _PhysiClub
               </h1>
               <p className="text-xs text-slate-600">Learn. Grow. Achieve.</p>
             </div>
