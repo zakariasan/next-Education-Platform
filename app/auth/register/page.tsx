@@ -31,7 +31,7 @@ const RegisterPage = () => {
       router.push("/auth/login");
       toast.success("success, login right now ")
     } else {
-  console.log(form)
+  console.log("failed ",form, res)
       const { error } = await res.json();
       toast(error)
     }
