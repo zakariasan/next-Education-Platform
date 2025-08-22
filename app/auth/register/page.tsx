@@ -4,13 +4,14 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import React, { useState } from "react";
+import { toast } from "sonner";
+import { FormEvent } from 'react';
 
 
 
@@ -18,7 +19,7 @@ import React, { useState } from "react";
 const RegisterPage = () => {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const router = useRouter();
-  const submiting = async (e: any) => {
+  const submiting = async (e: FormEvent<HTMLFormElement> ) => {
     e.preventDefault();
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -28,9 +29,11 @@ const RegisterPage = () => {
 
     if (res.ok) {
       router.push("/auth/login");
+      toast.success("success, login right now ")
     } else {
+  console.log(form)
       const { error } = await res.json();
-      alert(error);
+      toast(error)
     }
   };
 

@@ -2,22 +2,11 @@
 //GET (list classes), POST (create class)
 //
 //   GET POST classes by TEACHER
-import { authOptions } from "@/lib/auth";
+import {  getAuthenticated } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
-import { getSession } from "next-auth/react";
 
-async function getAuthenticated() {
-  const session = await getServerSession( authOptions);
-
-  if (!session?.user?.email) return null;
-  return await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true },
-  });
-}
 
 export async function POST(req: NextRequest) {
   const user = await getAuthenticated();
@@ -65,12 +54,12 @@ export async function GET(req: NextRequest) {
       where: {
         teacherId: userId, // 🔥 Filter only this teacher's classes
       },
-      include: { teacher: true },
+      include: { teacher: true,students: true },
       orderBy: { createdAt: "desc" },
     });
 
     return NextResponse.json(classes, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ classes: [] }, { status: 500 });
+    return NextResponse.json({ classes: [], error }, { status: 500 });
   }
 }

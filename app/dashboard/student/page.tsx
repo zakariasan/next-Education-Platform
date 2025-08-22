@@ -5,8 +5,6 @@ import DashContentStudent from "./dashContentStudent";
 export default async function Dashboard() {
   const session = await getServerSession(authOptions);
 
-  console.log("SESSION AT DASHBOARD:", session);
-
   if (!session) redirect("/auth/login");
 
   return <DashContentStudent name={session?.user?.name || "User"} />;

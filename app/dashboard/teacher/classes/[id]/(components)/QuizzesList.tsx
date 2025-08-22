@@ -1,6 +1,5 @@
 "use client";
-import React, { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React from "react";
 import {
   Table,
   TableBody,
@@ -32,7 +31,7 @@ const QuizzesList = () => {
           <TableRow>
             <TableCell className="font-medium ">
                Forces Quiz           </TableCell>
-            <TableCell>Newton's Laws</TableCell>
+            <TableCell>Newton  Laws</TableCell>
             <TableCell>10</TableCell>
             <TableCell>2025-06-17</TableCell>
             <TableCell className="">12 / 15</TableCell>

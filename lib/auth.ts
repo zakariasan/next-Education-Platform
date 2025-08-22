@@ -5,6 +5,15 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 
+export async function getAuthenticated() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) return null;
+  return await prisma.user.findUnique({
+    where: { email: session.user.email },
+    select: { id: true },
+  });
+}
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -22,14 +31,18 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email },
         });
 
-        if (!user) return null;
-
+        if (!user || !user?.password) return null;
         const isValid = await bcrypt.compare(
           credentials.password,
           user.password,
         );
         if (!isValid) return null;
-        return { id: user.id, name: user.name, email: user.email, avatar: "https://github.com/shadcn.png" };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          avatar: "https://github.com/shadcn.png",
+        };
       },
     }),
     GoogleProvider({
@@ -43,7 +56,7 @@ export const authOptions: NextAuthOptions = {
   ],
   session: { strategy: "jwt" },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       try {
         // For OAuth providers (Google, Facebook)
         if (
@@ -88,7 +101,7 @@ export const authOptions: NextAuthOptions = {
         return false;
       }
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user }) {
       // If signing in, get user data from database
       if (user) {
         const dbUser = await prisma.user.findUnique({
@@ -110,7 +123,9 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as string | null;
         session.user.provider = token.provider as string | null;
-        session.user.avatar = token.avatar as string | "https://github.com/shadcn.png";
+        session.user.avatar = token.avatar as
+          | string
+          | "https://github.com/shadcn.png";
       }
       return session;
     },

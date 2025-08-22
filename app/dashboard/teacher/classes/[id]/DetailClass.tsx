@@ -1,11 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import HeaderClass from "./HeaderClass";
 
 import StudentsList from "./(components)/StudentsList";
 import QuizzesList from "./(components)/QuizzesList";
-import { Block, PartialBlock } from "@blocknote/core";
 import Lessons from "./(components)/Lessons";
 import { useParams } from "next/navigation";
 

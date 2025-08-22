@@ -1,7 +1,7 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { Trash, Trash2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import React from "react";
+import useSWR from "swr";
+import { Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -15,48 +15,49 @@ import { Lesson } from "@prisma/client";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-
-type LessonsProps = {
-  lessons: Lesson[];
-};
-
-const deleteLesson = async (lessonId: string) => {
-  try {
-    const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
-    if (res.ok) {
-      toast.success("Lesson Deleted successfully")
-    }
-  } catch (err) {
-    toast.error("Lesson Deletion Failed!")
-  }
-};
+import { fetcher } from "@/lib/fetcher";
 
 const LessonsList = () => {
   const params = useParams();
   const classId = params.id as string;
 
-  const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    const fetchLessons = async () => {
-      try {
-        const res = await fetch(`/api/lessons?classId=${classId}`);
-        const data = await res.json();
-        setLessons(data || []);
-      } catch (error) {
-        console.error("Failed to fetch lessons:", error);
-        setLessons([]);
-      } finally {
-        setLoading(false);
+  const {
+    data: lessons,
+    error,
+    mutate,
+    isLoading,
+  } = useSWR(`/api/lessons?classId=${classId}`, fetcher);
+  const deleteLesson = async (lessonId: string) => {
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
+      if (res.ok) {
+        mutate();
+        toast.success("Lesson Deleted successfully");
       }
-    };
+    } catch (err) {
+      toast.error(`Lesson Deletion Failed! ${err}`);
+    }
+  };
 
-    fetchLessons();
-  }, [classId]);
+  // useEffect(() => {
+  //   const fetchLessons = async () => {
+  //     try {
+  //       const res = await fetch(`/api/lessons?classId=${classId}`);
+  //       const data = await res.json();
+  //       setLessons(data || []);
+  //     } catch (error) {
+  //       console.error("Failed to fetch lessons:", error);
+  //       setLessons([]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //
+  //  fetchLessons();
+  //}, [classId]);
 
-  if (loading) return <div>Loading lessons...</div>;
-
-  console.log(lessons.length);
+  if (isLoading) return <div>Loading lessons...</div>;
+  if (error) return <div>Error pls wait Loading lessons...</div>;
 
   return (
     <div>
@@ -74,7 +75,7 @@ const LessonsList = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {lessons?.map((lesson) => (
+            {lessons?.map((lesson: Lesson) => (
               <TableRow key={lesson.id} className="group p-7">
                 <TableCell className="font-medium ">
                   <Link href={`${lesson.classId}/lessons/${lesson.id}`}>

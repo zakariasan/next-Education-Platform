@@ -19,7 +19,6 @@ interface EditorProps {
 }
 const Editor: React.FC<EditorProps> = ({
   initialContent,
-  blocks,
   setBlocks,
   editable,
 }) => {

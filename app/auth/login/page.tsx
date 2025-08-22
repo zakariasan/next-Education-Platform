@@ -15,6 +15,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebookF } from "react-icons/fa";
+import { FormEvent } from 'react';
 
 
 
@@ -22,7 +23,7 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const router = useRouter();
 
-  const handleLogin = async (e: any) => {
+  const handleLogin = async (e:FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const res = await signIn("credentials", {
@@ -88,7 +89,7 @@ const LoginPage = () => {
       </Card>
       <div>
         <span className="text-muted-foreground">
-          Don't have an account?&nbsp;
+          Do not have an account?
         </span>
         <Link
           href="/auth/register"

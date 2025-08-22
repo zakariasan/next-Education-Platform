@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   const { name, email, password } = await req.json();
 
+  console.log(name, email, password);
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Missing fields!😞" }, { status: 400 });
   }
@@ -14,8 +15,8 @@ export async function POST(req: NextRequest) {
 
   if (userEx) {
     return NextResponse.json(
-      { erro: "Email already in use, try to login!🤔" },
-      { status: 400 },
+      { error: "Email already in use, try to login!🤔" },
+      { status: 403 },
     );
   }
 

@@ -1,14 +1,13 @@
 "use Client";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import LessonsList from "./lessons/LessonsList";
 import LessonEditor from "./lessons/LessonsEditor";
 type LessonsProps = {
   createLesson: boolean;
   classId: string;
 };
-import { Lesson } from "@prisma/client";
 
-const Lessons = ({ createLesson, classId }: LessonsProps) => {
+const Lessons = ({ createLesson}: LessonsProps) => {
   return (
     <div>
       {createLesson ? <LessonEditor /> : <LessonsList  />}

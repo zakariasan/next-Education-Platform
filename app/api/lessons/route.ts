@@ -56,14 +56,14 @@ export async function GET(req: NextRequest) {
   if (!classId) NextResponse.json({error: "Missing classId"}, {status:400})
   try {
     const lessons = await prisma.lesson.findMany({
-      where: { classId: classId},
+       where: classId ? {classId} : undefined,
       include: { class: { select: { name: true } } },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json(lessons, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { error: "Error fetching lessons look for them !!!No Lessons" },
+      { error: error },
       { status: 500 },
     );
   }

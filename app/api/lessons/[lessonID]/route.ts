@@ -1,11 +1,9 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { lessonId: string } },
+  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
 ) {
   const { lessonID } = await params;
 
@@ -19,17 +17,13 @@ export async function GET(
     });
     return NextResponse.json(lesson, { status: 200 });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error fetching lesson look for them !!!No Lesson" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error }, { status: 500 });
   }
 }
 
 export async function PUT(
   req: NextRequest,
-
-  { params }: { params: { lessonId: string } },
+  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
 ) {
   const { lessonID } = await params;
 
@@ -70,7 +64,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { lessonId: string } },
+  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
 ) {
   const { lessonID } = await params;
 
@@ -84,9 +78,6 @@ export async function DELETE(
     });
     return NextResponse.json(lesson, { status: 200 });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error deleting lesson!!!" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error }, { status: 500 });
   }
 }

@@ -13,24 +13,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id               String   @id @default(cuid())
-  name             String
-  email            String   @unique
-  password         String?
-  avatar           String? // For avatar (from Google or custom upload)
-  provider         String? // "credentials" or "google"
-  role             Role?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  teacherClasses   Class[]  @relation("teacherClasses")
-  studentClasses   Class[]  @relation("studentClasses")
-  quizzes          Quiz[]   @relation("teacherQuizzes") // <-- This connects back to Quiz.teacher
-  submittedQuizzes Quiz[]   @relation("studentClasses")
-
-  lessons Lesson[] @relation("teacherLessons")
-}
-
 enum Role {
   STUDENT
   TEACHER
@@ -43,18 +25,53 @@ enum LessonStatus {
   ARCHIVED // Optional: for soft deletion or old versions
 }
 
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model User {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  password         String?
+  avatar           String? // For avatar (from Google or custom upload)
+  provider         String? // "credentials" or "google"
+  role             Role?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // XP totals
+  totalXP   Int      @default(0)
+
+  //relations
+  teacherClasses   Class[]  @relation("teacherClasses")
+  studentClasses   Class[]  @relation("studentClasses")
+  quizzes          Quiz[]   @relation("teacherQuizzes")
+  submittedQuizzes Quiz[]   @relation("studentQuizzes")
+  lessons Lesson[] @relation("teacherLessons")
+
+  // Seance participation
+  participations   SeanceParticipation[]
+}
+
 model Class {
   id          String  @id @default(cuid())
   name        String
   description String?
-  key         String  @unique // random key string students 
-  teacherId   String // This connects to a teacher
-  teacher     User    @relation("teacherClasses", fields: [teacherId], references: [id]) // ✅ Then use it in relation
+  key         String  @unique
 
+  teacherId   String
+  teacher     User    @relation("teacherClasses", fields: [teacherId], references: [id])
   students  User[]      @relation("studentClasses")
+
   lessons   Lesson[]
   quizzes   Quiz[]
   materials Materials[]
+  seances     Seance[]
+
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
@@ -87,7 +104,7 @@ model Quiz {
 
   dueDate     DateTime?
   duration    Int? // in minutes
-  submissions User[]    @relation("studentClasses")
+  submissions User[]    @relation("studentQuizzes")
 
   questions Question[]
   createdAt DateTime   @default(now())
@@ -123,4 +140,40 @@ model Materials {
   createdAt DateTime @default(now())
   Class     Class?   @relation(fields: [classId], references: [id])
   classId   String?
+}
+
+
+// A teaching session / meeting
+model Seance {
+  id        String   @id @default(cuid())
+  title     String?
+  startsAt  DateTime @default(now())
+  endsAt    DateTime?
+  isActive  Boolean  @default(false)
+
+  class     Class    @relation(fields: [classId], references: [id])
+  classId   String
+
+   participations SeanceParticipation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Attendance + points per student in a seance
+model SeanceParticipation {
+  id          String           @id @default(cuid())
+  seanceId    String
+  studentId   String
+
+  attendance  AttendanceStatus @default(PRESENT)
+  points Int              @default(0)
+  notes       String?
+  seance   Seance @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+  student  User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([seanceId, studentId]) // One record per student per seance
 }

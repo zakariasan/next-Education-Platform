@@ -1,9 +1,7 @@
-import React from 'react'
-import LessonEditorUpdate from './LessonsEditorUpdate'
+import React from "react";
+import LessonEditorUpdate from "./LessonsEditorUpdate";
 
-
-
-async function getLesson(lessonId : string) {
+async function getLesson(lessonId: string) {
   const res = await fetch(
     `${process.env.NEXTAUTH_URL}/api/lessons/${lessonId}`,
     {
@@ -18,21 +16,18 @@ async function getLesson(lessonId : string) {
   return res.json();
 }
 type pageLessonProps = {
-  params: {
-    lessonId: string
-  }
-}
+  params: Promise<{ LessonId: string }>;
+};
 
-const page = async ({ params }:pageLessonProps) => {
-  const {LessonId} = await params
+const page = async ({ params }: pageLessonProps) => {
+  const { LessonId } = await params;
 
-  const lesson = await getLesson(LessonId)
-  console.log(lesson)
+  const lesson = await getLesson(LessonId);
   return (
     <div>
       <LessonEditorUpdate lesson={lesson} />
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;

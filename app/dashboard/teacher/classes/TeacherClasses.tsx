@@ -1,51 +1,48 @@
 "use client";
+
 import React, { useState } from "react";
 import SearchBar from "../../(components)/SearchBar";
 import CreateClassPOP from "../(components)/CreateClassPOP";
 import TeacherClass from "./TeacherClass";
-import { useSession } from "next-auth/react";
-import { Class } from "@prisma/client";
+import { Class, User } from "@prisma/client";
+
 type TeacherClassesProps = {
-  classes: Class[];
+  classes: (Class & {
+    teacher: User;
+    students: User[];
+  })[];
 };
+
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
   const [search, setSearch] = useState("");
 
+  const filteredClasses = classes.filter(cls =>
+    cls.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div>
-      <div className="flex gap-20 items-center">
-        <h1 className="text-2xl font-semibold ">Teacher Classes</h1>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h1 className="text-3xl font-extrabold text-slate-800">My Classes</h1>
         <SearchBar onSearch={setSearch} />
       </div>
 
-      <div className="flex justify-between items-center bg-white  mt-6 rounded-xl shadow-md space-x-6  px-4">
-        <div className=" flex justify-between  text-xl   w-2/6">
-          <div className=" rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition">
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              22
-            </span>
-            <p className="p-2 text-gray-400">Students</p>
+      {/* Stats & Create */}
+      <div className="flex flex-col sm:flex-row justify-between items-center bg-white shadow-md rounded-2xl px-6 py-4 gap-4">
+        <div className="flex gap-6">
+          <div className="flex flex-col items-center bg-blue-50 rounded-xl px-4 py-2 shadow-inner">
+            <span className="text-xl font-bold text-blue-700">{classes.length}</span>
+            <p className="text-sm text-gray-500">Classes</p>
           </div>
-
-          <div className=" rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition">
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              22
-            </span>
-            <p className="p-2 text-gray-400">Lessons</p>
-          </div>
-
-          <div className=" rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition">
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              22
-            </span>
-            <p className="p-2 text-gray-400">Quizzes</p>
-          </div>
+          {/* Optional: Lessons, Quizzes stats */}
         </div>
         <CreateClassPOP />
       </div>
 
-      <div className="flex gap-3 flex-col  sm:flex-row  ">
-        {classes?.map((itemClass) => (
+      {/* Classes Grid */}
+      <div className="flex  gap-2">
+        {filteredClasses.map(itemClass => (
           <TeacherClass key={itemClass.id} itemClass={itemClass} />
         ))}
       </div>
@@ -54,3 +51,4 @@ const TeacherClasses = ({ classes }: TeacherClassesProps) => {
 };
 
 export default TeacherClasses;
+

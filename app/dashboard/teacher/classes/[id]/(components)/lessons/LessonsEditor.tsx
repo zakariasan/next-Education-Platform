@@ -5,12 +5,7 @@ import { useMemo, useState } from "react";
 import { Block, PartialBlock } from "@blocknote/core";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-type editorProps = {
-  blocks: Block[];
-  setBlocksAction: React.Dispatch<React.SetStateAction<Block[]>>;
-  title: string;
-  setTitleAction: React.Dispatch<React.SetStateAction<string>>;
-};
+
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
@@ -97,8 +92,12 @@ export default function LessonEditor() {
             required
           />
           <span className="text-gray-400">
-            <Switch checked={status} onCheckedChange={() => setStatus(!status)} className={status ? "bg-green-500" : "bg-gray-300"}
-            /> {status ? "PUBLISH" : "DRAFT"}
+            <Switch
+              checked={status}
+              onCheckedChange={() => setStatus(!status)}
+              className={status ? "bg-green-500" : "bg-gray-300"}
+            />{" "}
+            {status ? "PUBLISH" : "DRAFT"}
           </span>
         </div>
       </div>
