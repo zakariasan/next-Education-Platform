@@ -21,7 +21,7 @@ async function getClasses() {
 const page = async () => {
   const classesData = await getClasses();
 
-  const classes = classesData || [];
+  const classes = classesData;
 console.log("See Classes type",classesData)
   return (
     <div>

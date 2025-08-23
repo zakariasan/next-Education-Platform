@@ -15,7 +15,7 @@ type TeacherClassesProps = {
 
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
   const [search, setSearch] = useState("");
-  const safeClasses = Array.isArray(classes) ? classes : [];
+  const safeClasses = Array.isArray(classes) ? classes : classes;
 
   const filteredClasses = safeClasses.filter(cls =>
     cls.name.toLowerCase().includes(search.toLowerCase())
