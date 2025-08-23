@@ -28,7 +28,8 @@ export async function GET(req: NextRequest,
       return new NextResponse("Class not found", { status: 404 });
     }
 
-    return NextResponse.json(classData);
+    console.log("backend fetch", classData)
+    return NextResponse.json(classData, {status: 200});
   } catch (error) {
     console.error("[ospyyyy errorrrrrrrrr]", error);
     return new NextResponse("Internal Server Error", { status: 500 });
