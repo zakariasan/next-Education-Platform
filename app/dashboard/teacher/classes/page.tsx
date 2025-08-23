@@ -13,6 +13,7 @@ async function getClasses() {
       credentials: "include",
     },
   );
+  console.log("====>", res.json())
   if (!res.ok) {
     return { classes: [] };
   }
