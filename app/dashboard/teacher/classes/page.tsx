@@ -21,7 +21,17 @@ async function getClasses() {
 const page = async () => {
   const classesData = await getClasses();
 
-  const classes = classesData;
+  let classes;
+  if (Array.isArray(classesData)) {
+    classes = classesData;
+  } else if (classesData?.classes && Array.isArray(classesData.classes)) {
+    classes = classesData.classes;
+  } else {
+    classes = [];
+  }
+  
+  console.log("See Classes type", classesData);
+  console.log("Final classes:", classes);
 console.log("See Classes type",classesData)
   return (
     <div>

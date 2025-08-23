@@ -6,19 +6,18 @@ import TeacherClass from "./TeacherClass";
 import { Class, User } from "@prisma/client";
 
 type TeacherClassesProps = {
-  classes: (Class & {
+  classes?: (Class & {
     teacher: User;
     students: User[];
   })[];
 };
 
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
- // const safeClasses = Array.isArray(classes) ? classes : [classes];
 
-//  const filteredClasses = safeClasses.filter((cls) =>
- //   cls.name.toLowerCase().includes(search.toLowerCase()),
-  //);
 
+    const safeClasses = Array.isArray(classes) ? classes : [];
+  
+  console.log("Checking : ", Array.isArray(classes), classes, safeClasses);
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -31,7 +30,7 @@ const TeacherClasses = ({ classes }: TeacherClassesProps) => {
         <div className="flex gap-6">
           <div className="flex flex-col items-center bg-blue-50 rounded-xl px-4 py-2 shadow-inner">
             <span className="text-xl font-bold text-blue-700">
-              {classes.length}
+              {safeClasses.length}
             </span>
             <p className="text-sm text-gray-500">Classes</p>
           </div>
@@ -42,7 +41,7 @@ const TeacherClasses = ({ classes }: TeacherClassesProps) => {
 
       {/* Classes Grid */}
       <div className="flex  gap-2">
-        {classes.map((itemClass) => (
+        {safeClasses.map((itemClass) => (
           <TeacherClass key={itemClass.id} itemClass={itemClass} />
         ))}
       </div>
