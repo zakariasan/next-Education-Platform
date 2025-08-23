@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import SearchBar from "../../(components)/SearchBar";
+import React from "react";
 import CreateClassPOP from "../(components)/CreateClassPOP";
 import TeacherClass from "./TeacherClass";
 import { Class, User } from "@prisma/client";
@@ -14,19 +13,17 @@ type TeacherClassesProps = {
 };
 
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
-  const [search, setSearch] = useState("");
-  const safeClasses = Array.isArray(classes) ? classes : [classes];
+ // const safeClasses = Array.isArray(classes) ? classes : [classes];
 
-  const filteredClasses = safeClasses.filter((cls) =>
-    cls.name.toLowerCase().includes(search.toLowerCase()),
-  );
+//  const filteredClasses = safeClasses.filter((cls) =>
+ //   cls.name.toLowerCase().includes(search.toLowerCase()),
+  //);
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-3xl font-extrabold text-slate-800">My Classes</h1>
-        <SearchBar onSearch={setSearch} />
       </div>
 
       {/* Stats & Create */}
@@ -45,7 +42,7 @@ const TeacherClasses = ({ classes }: TeacherClassesProps) => {
 
       {/* Classes Grid */}
       <div className="flex  gap-2">
-        {filteredClasses.map((itemClass) => (
+        {classes.map((itemClass) => (
           <TeacherClass key={itemClass.id} itemClass={itemClass} />
         ))}
       </div>
