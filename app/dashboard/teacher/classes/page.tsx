@@ -13,7 +13,7 @@ async function getClasses() {
       credentials: "include",
     },
   );
-  console.log("====>", res.json())
+  console.log(`${process.env.NEXTAUTH_URL}/api/teacher/classes?userId=${userId}`)
   if (!res.ok) {
     return { classes: [] };
   }
@@ -23,7 +23,7 @@ const page = async () => {
   const classesData = await getClasses();
 
   const classes = classesData || [];
-console.log("See Classes type",classes)
+console.log("See Classes type",classesData)
   return (
     <div>
       <TeacherClasses classes={classes} />
