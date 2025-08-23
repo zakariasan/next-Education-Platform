@@ -13,7 +13,6 @@ async function getClasses() {
       credentials: "include",
     },
   );
-  console.log(`${process.env.NEXTAUTH_URL}/api/teacher/classes?userId=${userId}`)
   if (!res.ok) {
     return { classes: [] };
   }

@@ -58,8 +58,10 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    console.log("Check back ++++", classes)
     return NextResponse.json(classes, { status: 200 });
   } catch (error) {
+    console.log("Check back ++++ERROR", error)
     return NextResponse.json({ classes: [], error }, { status: 500 });
   }
 }
