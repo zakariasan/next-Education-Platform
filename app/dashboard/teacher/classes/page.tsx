@@ -35,9 +35,6 @@ const page = async () => {
     classes = [];
   }
   
-  console.log("See Classes type", classesData);
-  console.log("Final classes:", classes);
-console.log("See Classes type",classesData)
   return (
     <div>
       <TeacherClasses classes={classes} />
