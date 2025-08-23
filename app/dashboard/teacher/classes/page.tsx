@@ -6,16 +6,19 @@ import { getServerSession } from "next-auth";
 async function getClasses() {
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
-  const res = await fetch(`/api/teacher/classes?userId=${userId}`,
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+  console.log("API URL:", `${baseUrl}/api/teacher/classes?userId=${userId}`);
+  console.log("User ID:", userId);
+  const res = await fetch(`${baseUrl}/api/teacher/classes?userId=${userId}`,
     {
       method: "GET",
       credentials: "include",
     },
   );
+  console.log("Some Check here: ",res)
   if (!res.ok) {
     return { classes: [] };
   }
-  console.log("Some Check here: ",res)
   return res.json();
 }
 const page = async () => {
