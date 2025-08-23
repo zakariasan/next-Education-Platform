@@ -3,22 +3,26 @@ import TeacherClasses from "./TeacherClasses";
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
-
 async function getClasses() {
   const session = await getServerSession(authOptions);
-  const headersList = await headers();
 
+  const headersList = await headers();
   const userId = session?.user?.id;
-  const res = await fetch(`/api/teacher/classes?userId=${userId}`, {
-    method: "GET",
-    headers: {
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
+  console.log("API URL:", `${baseUrl}/api/teacher/classes?userId=${userId}`);
+  console.log("User ID:", userId);
+  const res = await fetch(`${baseUrl}/api/teacher/classes?userId=${userId}`,
+    {
+      method: "GET",
+      headers: {
       // Convert Headers object to plain object
       ...Object.fromEntries(headersList.entries()),
       "Content-Type": "application/json",
     },
     cache: "no-store",
-  });
-  console.log("Some Check here: ", res);
+    },
+  );
+  console.log("Some Check here: ",res)
   if (!res.ok) {
     return { classes: [] };
   }
@@ -35,7 +39,7 @@ const page = async () => {
   } else {
     classes = [];
   }
-
+  
   return (
     <div>
       <TeacherClasses classes={classes} />
