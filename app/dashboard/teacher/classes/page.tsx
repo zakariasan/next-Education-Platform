@@ -5,6 +5,8 @@ import { getServerSession } from "next-auth";
 
 async function getClasses() {
   const session = await getServerSession(authOptions);
+
+
   const userId = session?.user?.id;
   const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
   console.log("API URL:", `${baseUrl}/api/teacher/classes?userId=${userId}`);

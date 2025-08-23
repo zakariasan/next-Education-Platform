@@ -43,11 +43,14 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+
+  const user = await getAuthenticated();
+
   const searchParams = req.nextUrl.searchParams
   const userId = searchParams.get('userId')
-
-  if(!userId){
-    return Response.json({ error: "User ID required" }, { status: 400 })
+  console.log("SErver Check session: ", user)
+  if(!userId || !user){
+    return Response.json({ error: "User ID required by server" }, { status: 400 })
   }
     try {
     const classes = await prisma.class.findMany({
