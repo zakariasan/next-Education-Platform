@@ -22,7 +22,7 @@ const page = async () => {
   const classesData = await getClasses();
 
   const classes = classesData || [];
-
+console.log("See Classes type",classes)
   return (
     <div>
       <TeacherClasses classes={classes} />
