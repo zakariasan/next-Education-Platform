@@ -8,15 +8,16 @@ generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
 //datasource db {
-//  provider = "sqlite"
+//  provider = "postgresql"
 //  url      = env("DATABASE_URL")
 //}
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
 enum Role {
   STUDENT
   TEACHER
@@ -37,28 +38,32 @@ enum AttendanceStatus {
 }
 
 model User {
-  id               String   @id @default(cuid())
-  name             String
-  email            String   @unique
-  password         String?
-  avatar           String? // For avatar (from Google or custom upload)
-  provider         String? // "credentials" or "google"
-  role             Role?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String?
+  avatar    String? // For avatar (from Google or custom upload)
+  provider  String? // "credentials" or "google"
+  role      Role?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // XP totals
-  totalXP   Int      @default(0)
+  totalXP Int @default(0)
 
   //relations
   teacherClasses   Class[]  @relation("teacherClasses")
   studentClasses   Class[]  @relation("studentClasses")
   quizzes          Quiz[]   @relation("teacherQuizzes")
   submittedQuizzes Quiz[]   @relation("studentQuizzes")
-  lessons Lesson[] @relation("teacherLessons")
+  lessons          Lesson[] @relation("teacherLessons")
 
   // Seance participation
-  participations   SeanceParticipation[]
+  participations SeanceParticipation[]
+
+  //Exam 
+  exams   Exam[]       @relation("TeacherExams") // 👈 exams this teacher created
+  results ExamResult[]
 }
 
 model Class {
@@ -67,15 +72,15 @@ model Class {
   description String?
   key         String  @unique
 
-  teacherId   String
-  teacher     User    @relation("teacherClasses", fields: [teacherId], references: [id])
-  students  User[]      @relation("studentClasses")
+  teacherId String
+  teacher   User   @relation("teacherClasses", fields: [teacherId], references: [id])
+  students  User[] @relation("studentClasses")
 
   lessons   Lesson[]
   quizzes   Quiz[]
   materials Materials[]
-  seances     Seance[]
-
+  seances   Seance[]
+  exams     Exam[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
@@ -146,19 +151,18 @@ model Materials {
   classId   String?
 }
 
-
 // A teaching session / meeting
 model Seance {
-  id        String   @id @default(cuid())
-  title     String?
-  startsAt  DateTime @default(now())
-  endsAt    DateTime?
-  isActive  Boolean  @default(false)
+  id       String    @id @default(cuid())
+  title    String?
+  startsAt DateTime  @default(now())
+  endsAt   DateTime?
+  isActive Boolean   @default(false)
 
-  class     Class    @relation(fields: [classId], references: [id])
-  classId   String
+  class   Class  @relation(fields: [classId], references: [id])
+  classId String
 
-   participations SeanceParticipation[]
+  participations SeanceParticipation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -166,18 +170,81 @@ model Seance {
 
 // Attendance + points per student in a seance
 model SeanceParticipation {
-  id          String           @id @default(cuid())
-  seanceId    String
-  studentId   String
+  id        String @id @default(cuid())
+  seanceId  String
+  studentId String
 
-  attendance  AttendanceStatus @default(PRESENT)
-  points Int              @default(0)
-  notes       String?
-  seance   Seance @relation(fields: [seanceId], references: [id], onDelete: Cascade)
-  student  User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  attendance AttendanceStatus @default(PRESENT)
+  points     Int              @default(0)
+  notes      String?
+  seance     Seance           @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+  student    User             @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([seanceId, studentId]) // One record per student per seance
+}
+
+// feature of Exam 
+// prisma/schema.prisma
+
+enum ExamType {
+  MIDTERM
+  FINAL
+  LOCAL
+  CUSTOM
+}
+
+enum ExamFileKind {
+  STATEMENT
+  CORRECTION
+  RUBRIC
+  OTHER
+}
+
+model Exam {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        ExamType
+  date        DateTime?
+  class       Class     @relation(fields: [classId], references: [id])
+  classId     String
+  teacher     User      @relation("TeacherExams", fields: [teacherId], references: [id])
+  teacherId   String
+maxScore    Int       @default(20)     // the grading base (e.g., 20 or 100)
+  maxXP       Int       @default(100)    // how many XP at 100% score
+  files   ExamFile[]
+  results ExamResult[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ExamFile {
+  id        String       @id @default(cuid())
+  exam      Exam         @relation(fields: [examId], references: [id])
+  examId    String
+  name      String
+  url       String
+  kind      ExamFileKind @default(OTHER)
+  createdAt DateTime     @default(now())
+}
+
+model ExamResult {
+  id        String @id @default(cuid())
+  exam      Exam   @relation(fields: [examId], references: [id])
+  examId    String
+  student   User   @relation(fields: [studentId], references: [id])
+  studentId String
+
+  score     Float   @default(0) // raw exam score
+  xpAwarded Int     @default(0) // computed from score/maxScore * maxXP
+  notes     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([examId, studentId]) // one row per student per exam
 }

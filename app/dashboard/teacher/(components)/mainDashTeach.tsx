@@ -1,3 +1,5 @@
+
+"use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -24,8 +26,9 @@ import {
   Edit
 } from "lucide-react";
 
-import { User} from '@prisma/client';
-const MainDashTeach = () => {
+import { User } from '@prisma/client';
+const MainDashTeach = ({ name_Teacher }: { name_Teacher: string }) => {
+
   const [dashboardData, setDashboardData] = useState({
     totalStudents: 0,
     totalClasses: 0,
@@ -145,7 +148,7 @@ const MainDashTeach = () => {
               <div className="space-y-4">
                 <div>
                   <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
-                    Welcome back, Professor! 👋
+                    Welcome back, Professor! {name_Teacher}👋
                   </h2>
                   <p className="text-slate-700 mt-2 text-lg">
                     Ready to inspire the next generation of physicists?
@@ -296,8 +299,8 @@ const MainDashTeach = () => {
                 {upcomingEvents.map((event, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
                     <div className={`p-2 rounded-full ${event.type === 'meeting' ? 'bg-blue-100 text-blue-600' :
-                        event.type === 'review' ? 'bg-emerald-100 text-emerald-600' :
-                          'bg-amber-100 text-amber-600'
+                      event.type === 'review' ? 'bg-emerald-100 text-emerald-600' :
+                        'bg-amber-100 text-amber-600'
                       }`}>
                       <Clock className="h-4 w-4" />
                     </div>
@@ -326,8 +329,8 @@ const MainDashTeach = () => {
                 {announcements.map((announcement, index) => (
                   <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
                     <div className={`p-1 rounded-full ${announcement.priority === 'high' ? 'bg-red-100 text-red-600' :
-                        announcement.priority === 'medium' ? 'bg-amber-100 text-amber-600' :
-                          'bg-slate-100 text-slate-600'
+                      announcement.priority === 'medium' ? 'bg-amber-100 text-amber-600' :
+                        'bg-slate-100 text-slate-600'
                       }`}>
                       {announcement.priority === 'high' ? <AlertCircle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
                     </div>

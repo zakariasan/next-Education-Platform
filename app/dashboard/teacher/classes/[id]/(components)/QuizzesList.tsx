@@ -1,5 +1,12 @@
 "use client";
 import React from "react";
+import ExamsList from "../exams/page";
+
+const QuizzesList = () => {
+  return (
+    <ExamsList />
+  )
+  {/*
 import {
   Table,
   TableBody,
@@ -10,9 +17,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-
-const QuizzesList = () => {
-  return (
     <div>
    <Table className="bg-white rounded-lg p-6 mt-3 ">
         <TableCaption>A list of your Quizzes.</TableCaption>
@@ -42,8 +46,7 @@ const QuizzesList = () => {
       </Table>
 
 
-    </div>
-  )
+    </div>*/}
 }
 
 export default QuizzesList

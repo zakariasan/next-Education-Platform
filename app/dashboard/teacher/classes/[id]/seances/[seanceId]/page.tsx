@@ -28,7 +28,7 @@ import { Trash2 } from "lucide-react";
 const statuses = ["PRESENT", "ABSENT", "LATE", "EXCUSED"];
 
 type StudentParticipation = {
-  id:string,
+  id: string;
   student: {
     id: string;
     name: string;
@@ -37,11 +37,10 @@ type StudentParticipation = {
   };
   attendance?: string;
   points?: number;
+  notes?: string;
   xp?: number;
   status?: string;
 };
-
-
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -65,35 +64,42 @@ export default function SeancePage() {
 
   const [students, setStudents] = useState<StudentParticipation[]>([]);
 
-const router = useRouter();
+  const router = useRouter();
 
-async function handleDeleteSeance() {
-  if (!confirm("Are you sure you want to delete this session? This action cannot be undone.")) {
-    return;
-  }
-  try {
-    const res = await fetch(`/api/teacher/classes/${classId}/seances/${seanceId}`, {
-      method: "DELETE",
-    });
-    if (res.ok) {
-      toast.success("Seance deleted ✅");
-      router.push(`/dashboard/teacher/classes/${classId}/seances`); // redirect back to class page
-    } else {
-      const data = await res.json();
-      toast.error(data.error || "Failed to delete seance ❌");
+  async function handleDeleteSeance() {
+    if (
+      !confirm(
+        "Are you sure you want to delete this session? This action cannot be undone.",
+      )
+    ) {
+      return;
     }
-  } catch (err) {
-      console.log(err)
-    toast.error("Failed to delete seance ❌");
+    try {
+      const res = await fetch(
+        `/api/teacher/classes/${classId}/seances/${seanceId}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (res.ok) {
+        toast.success("Seance deleted ✅");
+        router.push(`/dashboard/teacher/classes/${classId}/seances`); // redirect back to class page
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to delete seance ❌");
+      }
+    } catch (err) {
+      console.log(err);
+      toast.error("Failed to delete seance ❌");
+    }
   }
-}
 
   // Fetch students and their participation for this seance
   useEffect(() => {
     async function fetchStudents() {
       try {
         const res = await fetch(
-          `/api/teacher/classes/${classId}/seances/${seanceId}/attendance`
+          `/api/teacher/classes/${classId}/seances/${seanceId}/attendance`,
         );
         const data = await res.json();
         setStudents(data);
@@ -108,7 +114,7 @@ async function handleDeleteSeance() {
   // --- Save participation (attendance + xp) ---
   async function updateParticipation(
     studentId: string,
-    updates: { attendance?: string; xp?: number }
+    updates: { attendance?: string; xp?: number },
   ) {
     try {
       await fetch(
@@ -117,7 +123,7 @@ async function handleDeleteSeance() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ studentId, ...updates }),
-        }
+        },
       );
       toast.success("Participation updated ✅");
     } catch (err) {
@@ -125,7 +131,9 @@ async function handleDeleteSeance() {
     }
   }
 
-  const presentCount = students.filter(s => s.attendance === "PRESENT").length;
+  const presentCount = students.filter(
+    (s) => s.attendance === "PRESENT",
+  ).length;
   const totalStudents = students.length;
 
   return (
@@ -135,28 +143,29 @@ async function handleDeleteSeance() {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-white/20 shadow-sm">
             <Calendar className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-slate-600">Session Management</span>
+            <span className="text-sm font-medium text-slate-600">
+              Session Management
+            </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
             Attendance & Performance Tracking
           </h1>
           <p className="text-slate-600 max-w-2xl mx-auto">
-            Track student attendance and award experience points for active participation
+            Track student attendance and award experience points for active
+            participation
           </p>
         </div>
 
-
-
         <div className="flex justify-end">
-  <Button
-    variant="destructive"
-    onClick={handleDeleteSeance}
-    className="flex items-center gap-2"
-  >
-    <Trash2 className="w-4 h-4" />
-    Delete Session
-  </Button>
-</div>
+          <Button
+            variant="destructive"
+            onClick={handleDeleteSeance}
+            className="flex items-center gap-2"
+          >
+            <Trash2 className="w-4 h-4" />
+            Delete Session
+          </Button>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -167,8 +176,12 @@ async function handleDeleteSeance() {
                   <Users className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Total Students</p>
-                  <p className="text-2xl font-bold text-slate-900">{totalStudents}</p>
+                  <p className="text-sm font-medium text-slate-600">
+                    Total Students
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {totalStudents}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -181,8 +194,12 @@ async function handleDeleteSeance() {
                   <Users className="h-5 w-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Present Today</p>
-                  <p className="text-2xl font-bold text-slate-900">{presentCount}</p>
+                  <p className="text-sm font-medium text-slate-600">
+                    Present Today
+                  </p>
+                  <p className="text-2xl font-bold text-slate-900">
+                    {presentCount}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -195,9 +212,14 @@ async function handleDeleteSeance() {
                   <Award className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">Attendance Rate</p>
+                  <p className="text-sm font-medium text-slate-600">
+                    Attendance Rate
+                  </p>
                   <p className="text-2xl font-bold text-slate-900">
-                    {totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0}%
+                    {totalStudents > 0
+                      ? Math.round((presentCount / totalStudents) * 100)
+                      : 0}
+                    %
                   </p>
                 </div>
               </div>
@@ -231,14 +253,15 @@ async function handleDeleteSeance() {
                 </TableHeader>
                 <TableBody>
                   {students.map((student, index) => (
-                    <TableRow 
-                      key={student.id} 
+                    <TableRow
+                      key={student.id}
                       className="hover:bg-slate-50/50 transition-colors border-slate-200/30"
                     >
                       <TableCell className="py-4 px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                            {student?.student.name?.charAt(0)?.toUpperCase() || "?"}
+                            {student?.student.name?.charAt(0)?.toUpperCase() ||
+                              "?"}
                           </div>
                           <span className="font-medium text-slate-800">
                             {student?.student.name}
@@ -253,10 +276,12 @@ async function handleDeleteSeance() {
                           onValueChange={(value) => {
                             setStudents((prev) =>
                               prev.map((s, i) =>
-                                i === index ? { ...s, attendance: value } : s
-                              )
+                                i === index ? { ...s, attendance: value } : s,
+                              ),
                             );
-                            updateParticipation(student.student.id, { attendance: value });
+                            updateParticipation(student.student.id, {
+                              attendance: value,
+                            });
                           }}
                         >
                           <SelectTrigger className="w-36 mx-auto bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all">
@@ -271,7 +296,11 @@ async function handleDeleteSeance() {
                           </SelectTrigger>
                           <SelectContent className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl">
                             {statuses.map((status) => (
-                              <SelectItem key={status} value={status} className="hover:bg-slate-50/80">
+                              <SelectItem
+                                key={status}
+                                value={status}
+                                className="hover:bg-slate-50/80"
+                              >
                                 <Badge
                                   variant="outline"
                                   className={`${getStatusColor(status)} font-medium px-3 py-1`}
@@ -297,12 +326,33 @@ async function handleDeleteSeance() {
                             onChange={(e) => {
                               const xp = Number(e.target.value);
                               setStudents((prev) =>
-                                prev.map((s, i) => (i === index ? { ...s, points: xp } : s))
+                                prev.map((s, i) =>
+                                  i === index ? { ...s, points: xp } : s,
+                                ),
                               );
                             }}
                             onBlur={(e) => {
                               const xp = Number(e.target.value);
                               updateParticipation(student.student.id, { xp });
+                            }}
+                          />
+                        </div>
+                      </TableCell>
+                      {/* XP Notes */}
+                      <TableCell className="text-center py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <Award className="h-4 w-4 text-amber-500" />
+                          <Input
+                            type="text"
+                            value={student.notes || ''}
+                            className="w-20 text-center bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                            onChange={(e) => {
+                              const note = e.target.value;
+                              setStudents((prev) =>
+                                prev.map((s, i) =>
+                                  i === index ? { ...s, notes: note } : s,
+                                ),
+                              );
                             }}
                           />
                         </div>
@@ -319,9 +369,12 @@ async function handleDeleteSeance() {
           <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
             <CardContent className="p-8 text-center">
               <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-600 mb-2">No Students Found</h3>
+              <h3 className="text-lg font-medium text-slate-600 mb-2">
+                No Students Found
+              </h3>
               <p className="text-slate-500">
-                Students will appear here once they are enrolled in this session.
+                Students will appear here once they are enrolled in this
+                session.
               </p>
             </CardContent>
           </Card>
