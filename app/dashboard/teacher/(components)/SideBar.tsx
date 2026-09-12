@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { LayoutDashboard, BookOpenText, LogOut, ClipboardList, CalendarDays, GraduationCap, Users, School2 } from "lucide-react";
+import { LayoutDashboard, BookOpenText, LogOut, ClipboardList, CalendarDays, GraduationCap, Users, School2, CircuitBoard } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
@@ -10,6 +10,7 @@ const navItems = [
   { label: "Home", icon: LayoutDashboard, href: "/dashboard/teacher" },
   { label: "Schools", icon: School2, href: "/dashboard/teacher/schools" },
   { label: "Classes", icon: BookOpenText, href: "/dashboard/teacher/classes" },
+  { label: "Modules", icon: CircuitBoard, href: "/dashboard/teacher/modules" },
   { label: "Assignments & Quizzes", icon: ClipboardList, href: "/dashboard/assignments" },
   { label: "Students", icon: Users, href: "/dashboard/studensprogress" },
   { label: "Events", icon: CalendarDays, href: "/dashboard/events" },
