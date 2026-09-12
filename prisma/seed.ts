@@ -5,6 +5,7 @@
 import bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
 import { PHYSICS_MECHANICS, type SeedModule } from "./seed-data/physics-mechanics";
+import { seedModule } from "./seed-data/seed-module";
 import { BADGES } from "../lib/gamification/badges";
 import { GAMIFICATION } from "../lib/gamification/config";
 import { validationDedupeKey } from "../lib/gamification/service";
@@ -31,53 +32,6 @@ async function upsertUser(u: { email: string; name: string; role: "TEACHER" | "S
     update: { name: u.name, role: u.role },
     create: { ...u, password, provider: "credentials", correctionPoints: GAMIFICATION.correctionPoints.initial },
   });
-}
-
-async function seedModule(def: SeedModule, teacherId: string) {
-  await prisma.xpEvent.deleteMany({ where: { moduleId: def.id } });
-  await prisma.module.deleteMany({ where: { id: def.id } });
-
-  const module = await prisma.module.create({
-    data: { id: def.id, title: def.title, subject: def.subject, description: def.description, status: "PUBLISHED", teacherId },
-  });
-
-  for (const [i, p] of def.projects.entries()) {
-    const project = await prisma.project.create({
-      data: { id: p.id, moduleId: module.id, teacherId, isCore: p.isCore, orderIndex: i, status: "PUBLISHED" },
-    });
-    const version = await prisma.projectVersion.create({
-      data: {
-        projectId: project.id,
-        versionNumber: 1,
-        title: p.title,
-        statement: p.statement,
-        objectives: p.objectives,
-        estimatedHours: p.estimatedHours,
-        xpReward: p.xpReward,
-        allowedResources: p.allowedResources,
-        threshold: p.threshold ?? GAMIFICATION.validation.defaultThresholdPercent,
-        criteria: {
-          create: p.criteria.map((c, j) => ({
-            title: c.title,
-            description: c.description,
-            weight: c.weight,
-            mode: c.mode,
-            orderIndex: j,
-            autoConfig: c.autoConfig ?? undefined,
-          })),
-        },
-      },
-    });
-    await prisma.project.update({ where: { id: project.id }, data: { currentVersionId: version.id } });
-  }
-  for (const p of def.projects) {
-    if (!p.prerequisites.length) continue;
-    await prisma.project.update({
-      where: { id: p.id },
-      data: { prerequisites: { connect: p.prerequisites.map((id) => ({ id })) } },
-    });
-  }
-  return module;
 }
 
 type ValidatedSpec = { projectId: string; actualHours: number; failedBefore?: number };
@@ -155,7 +109,7 @@ async function main() {
   await prisma.userBadge.deleteMany({ where: { userId: { in: students.map((s) => s.id) } } });
   await prisma.user.updateMany({ where: { id: { in: students.map((s) => s.id) } }, data: { totalXP: 0 } });
 
-  for (const def of MODULES) await seedModule(def, teacher.id);
+  for (const def of MODULES) await seedModule(prisma, def, teacher.id);
 
   const mod = PHYSICS_MECHANICS.id;
   const P = (id: string) => `phys-mech-${id}`;

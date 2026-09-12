@@ -21,7 +21,8 @@ import {
   Undo2,
 } from "lucide-react";
 import EmptyState from "@/components/EmptyState";
-import type { ModuleDetailDTO, ProjectDTO } from "@/lib/gamification/types";
+import HolyGraph from "@/components/gamification/HolyGraph";
+import type { GraphPayload, ModuleDetailDTO, ProjectDTO } from "@/lib/gamification/types";
 import StatusPill from "./StatusPill";
 
 type Props = { basePath?: string; apiBase?: string };
@@ -31,15 +32,39 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
   const router = useRouter();
   const moduleId = params.id;
   const [mod, setMod] = useState<ModuleDetailDTO | null>(null);
+  const [graph, setGraph] = useState<GraphPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const res = await fetch(`${apiBase}/${moduleId}`);
+    const [res, g] = await Promise.all([fetch(`${apiBase}/${moduleId}`), fetch(`${apiBase}/${moduleId}/graph`)]);
     if (res.ok) setMod(await res.json());
     else toast.error("Module not found");
+    if (g.ok) setGraph(await g.json());
     setLoading(false);
   }, [apiBase, moduleId]);
+
+  const pin = async (id: string, p: { x: number; y: number } | null) => {
+    const res = await fetch(`${apiBase}/${moduleId}/graph`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pins: { [id]: p } }),
+    });
+    if (res.ok) {
+      const g = await fetch(`${apiBase}/${moduleId}/graph`);
+      if (g.ok) setGraph(await g.json());
+    } else toast.error("Could not save position");
+  };
+
+  const resetPins = async () => {
+    if (!graph) return;
+    const pins = Object.fromEntries(graph.nodes.filter((n) => n.pinX != null).map((n) => [n.id, null]));
+    if (!Object.keys(pins).length) return;
+    await fetch(`${apiBase}/${moduleId}/graph`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pins }) });
+    const g = await fetch(`${apiBase}/${moduleId}/graph`);
+    if (g.ok) setGraph(await g.json());
+    toast.success("Auto layout restored");
+  };
 
   useEffect(() => {
     load();
@@ -181,6 +206,21 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
           </Card>
         ))}
       </div>
+
+      {graph && graph.nodes.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-foreground">Holy Graph preview</h2>
+              <p className="text-xs text-muted-foreground">What students see (drafts included). Drag a component to pin it; click to edit.</p>
+            </div>
+            {graph.nodes.some((n) => n.pinX != null) && (
+              <Button size="sm" variant="ghost" onClick={resetPins}><Undo2 className="w-3.5 h-3.5" /> Auto layout</Button>
+            )}
+          </div>
+          <HolyGraph graph={graph} onSelect={(id) => router.push(`${basePath}/${moduleId}/projects/${id}`)} editable onPin={pin} className="h-[420px]" />
+        </div>
+      )}
 
       {mod.projects.length === 0 ? (
         <EmptyState
