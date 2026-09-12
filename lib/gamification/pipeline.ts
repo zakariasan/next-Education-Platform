@@ -54,7 +54,13 @@ export async function autoGradeAttempt(tx: Tx, attemptId: string) {
   const answers = (attempt.answers as Record<string, unknown> | null) ?? {};
   for (const c of attempt.version.criteria) {
     if (c.mode !== "AUTO" || !c.autoConfig) continue;
-    const score = autoGrade(c.autoConfig as AutoConfig, answers[c.id]);
+    const cfg = c.autoConfig as AutoConfig;
+    let input = answers[c.id];
+    if (cfg.type === "QUIZ") {
+      const qa = await tx.quizAttempt.findUnique({ where: { quizId_studentId: { quizId: cfg.quizId, studentId: attempt.studentId } } });
+      input = qa?.percent ?? null;
+    }
+    const score = autoGrade(cfg, input);
     await tx.criterionScore.upsert({
       where: { attemptId_criterionId: { attemptId, criterionId: c.id } },
       update: { score, mode: "AUTO" },

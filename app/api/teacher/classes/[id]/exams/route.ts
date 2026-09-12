@@ -55,7 +55,6 @@ export async function POST(
     maxXP?: number; // default 100
   };
 
-  console.log("Chek in : ", body);
   // Verify ownership
   const cls = await prisma.class.findUnique({
     where: { id: classId },
@@ -63,7 +62,6 @@ export async function POST(
   });
   if (!cls || cls.teacherId !== session.user.id)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  console.log("Check cls: ", cls);
   const exam = await prisma.exam.create({
     data: {
       title: body.title,
@@ -77,6 +75,5 @@ export async function POST(
     },
   });
 
-  console.log("Check Exam============================= > >  > > >  : ", exam);
   return NextResponse.json(exam, { status: 201 });
 }

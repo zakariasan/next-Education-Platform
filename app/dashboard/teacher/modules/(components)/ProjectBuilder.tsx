@@ -35,7 +35,8 @@ import { GAMIFICATION } from "@/lib/gamification/config";
 import type { CriterionDTO, CriterionInput, CriterionMode, ModuleDetailDTO, ProjectDTO } from "@/lib/gamification/types";
 import StatusPill from "./StatusPill";
 
-type AutoType = "NUMERIC" | "MCQ" | "UNIT";
+type AutoType = "NUMERIC" | "MCQ" | "UNIT" | "QUIZ";
+type QuizOption = { id: string; title: string; className: string; status: string };
 
 type CriterionDraft = {
   key: string;
@@ -48,6 +49,7 @@ type CriterionDraft = {
   numeric: { answer: string; tolerance: string; unit: string };
   mcq: { choices: string; correct: string };
   unit: string;
+  quiz: { quizId: string; minPercent: string };
 };
 
 const RESOURCE_SUGGESTIONS = ["Formula sheet", "Scientific calculator", "PhET simulator", "Spreadsheet", "Phone camera (video)", "Textbook"];
@@ -71,6 +73,7 @@ const emptyCriterion = (): CriterionDraft => ({
   numeric: { answer: "", tolerance: "0", unit: "" },
   mcq: { choices: "", correct: "" },
   unit: "",
+  quiz: { quizId: "", minPercent: "" },
 });
 
 function toDraft(c: CriterionDTO): CriterionDraft {
@@ -90,6 +93,9 @@ function toDraft(c: CriterionDTO): CriterionDraft {
   } else if (a?.type === "UNIT") {
     d.autoType = "UNIT";
     d.unit = a.expectedUnit;
+  } else if (a?.type === "QUIZ") {
+    d.autoType = "QUIZ";
+    d.quiz = { quizId: a.quizId, minPercent: a.minPercent != null ? String(a.minPercent) : "" };
   }
   return d;
 }
@@ -104,7 +110,8 @@ function toInput(d: CriterionDraft): CriterionInput {
         choices: d.mcq.choices.split("\n").map((s) => s.trim()).filter(Boolean),
         correctIndexes: d.mcq.correct.split(/[,\s]+/).map((s) => Number(s) - 1).filter((n) => Number.isInteger(n) && n >= 0),
       };
-    else autoConfig = { type: "UNIT", expectedUnit: d.unit };
+    else if (d.autoType === "UNIT") autoConfig = { type: "UNIT", expectedUnit: d.unit };
+    else autoConfig = { type: "QUIZ", quizId: d.quiz.quizId, minPercent: d.quiz.minPercent === "" ? undefined : Number(d.quiz.minPercent) };
   }
   return { id: d.id, title: d.title, description: d.description || null, weight: d.weight, mode: d.mode, autoConfig };
 }
@@ -135,6 +142,11 @@ const ProjectBuilder = ({ basePath = "/dashboard/teacher/modules", apiBase = "/a
   const [resourceInput, setResourceInput] = useState("");
   const [criteria, setCriteria] = useState<CriterionDraft[]>([emptyCriterion()]);
   const [prereqIds, setPrereqIds] = useState<string[]>([]);
+  const [quizOptions, setQuizOptions] = useState<QuizOption[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/teacher/quizzes?moduleId=${moduleId}`).then(async (r) => r.ok && setQuizOptions(await r.json())).catch(() => {});
+  }, [moduleId]);
 
   const load = useCallback(async () => {
     const res = await fetch(`${apiBase}/${moduleId}`);
@@ -488,9 +500,25 @@ const ProjectBuilder = ({ basePath = "/dashboard/teacher/modules", apiBase = "/a
                                 <SelectItem value="NUMERIC">Numeric ± tolerance</SelectItem>
                                 <SelectItem value="MCQ">Multiple choice</SelectItem>
                                 <SelectItem value="UNIT">Unit check</SelectItem>
+                                <SelectItem value="QUIZ">Quiz score</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
+                          {c.autoType === "QUIZ" && (
+                            <div className="grid sm:grid-cols-[minmax(0,1fr)_150px] gap-2">
+                              <Select value={c.quiz.quizId || "none"} onValueChange={(v) => updateCriterion(c.key, { quiz: { ...c.quiz, quizId: v === "none" ? "" : v } })}>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Pick a quiz" /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Pick a quiz…</SelectItem>
+                                  {quizOptions.map((q) => (
+                                    <SelectItem key={q.id} value={q.id}>{q.title} · {q.className}{q.status !== "PUBLISHED" ? " (draft)" : ""}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Input type="number" min="0" max="100" value={c.quiz.minPercent} onChange={(e) => updateCriterion(c.key, { quiz: { ...c.quiz, minPercent: e.target.value } })} placeholder="Pass % (optional)" className="h-8 text-sm" />
+                              <p className="text-[11px] text-muted-foreground sm:col-span-2">Scored from the student&apos;s quiz result. With a pass %, the criterion is all-or-nothing; without it, the quiz percentage is used.</p>
+                            </div>
+                          )}
                           {c.autoType === "NUMERIC" && (
                             <div className="grid grid-cols-3 gap-2">
                               <Input type="number" step="any" value={c.numeric.answer} onChange={(e) => updateCriterion(c.key, { numeric: { ...c.numeric, answer: e.target.value } })} placeholder="Answer" className="h-8 text-sm" />

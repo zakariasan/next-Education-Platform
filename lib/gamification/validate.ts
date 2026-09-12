@@ -27,6 +27,12 @@ export function parseAutoConfig(raw: unknown): AutoConfig | null {
       if (typeof r.expectedUnit !== "string" || !r.expectedUnit.trim()) return null;
       return { type: "UNIT", expectedUnit: r.expectedUnit.trim() };
     }
+    case "QUIZ": {
+      if (typeof r.quizId !== "string" || !r.quizId) return null;
+      const minPercent = r.minPercent == null || r.minPercent === "" ? undefined : Number(r.minPercent);
+      if (minPercent != null && (!Number.isFinite(minPercent) || minPercent < 0 || minPercent > 100)) return null;
+      return { type: "QUIZ", quizId: r.quizId, minPercent };
+    }
     default:
       return null;
   }

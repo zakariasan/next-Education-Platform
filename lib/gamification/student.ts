@@ -53,8 +53,12 @@ export function publicAutoConfig(cfg: AutoConfig | null): Record<string, unknown
       return { type: "MCQ", choices: cfg.choices, multiple: cfg.correctIndexes.length > 1 };
     case "UNIT":
       return { type: "UNIT" };
+    case "QUIZ":
+      return { type: "QUIZ", quizId: cfg.quizId, minPercent: cfg.minPercent ?? null };
   }
 }
+
+export type LinkedQuiz = { id: string; title: string; questionCount: number; xpReward: number; percent: number | null; required: boolean };
 
 export type StudentCriterion = {
   id: string;
@@ -97,6 +101,7 @@ export type StudentProjectPanel = {
     pendingReviews: { kind: "TEACHER" | "PEER"; status: "PENDING" | "DONE" }[];
   } | null;
   criteria: StudentCriterion[];
+  quizzes: LinkedQuiz[];
   retry: { allowed: boolean; availableAt: string | null; failedAttempts: number };
 };
 
@@ -144,6 +149,16 @@ export async function studentProjectPanel(studentId: string, projectId: string):
   const failed = attempts.filter((a) => a.state === "FAILED");
   const lastFailedAt = latest?.state === "FAILED" ? latest.reviewedAt : null;
 
+  // Quizzes attached to this project or required by a QUIZ criterion.
+  const requiredQuizIds = v.criteria
+    .map((c) => c.autoConfig as AutoConfig | null)
+    .filter((c): c is Extract<AutoConfig, { type: "QUIZ" }> => c?.type === "QUIZ")
+    .map((c) => c.quizId);
+  const linkedQuizzes = await prisma.quiz.findMany({
+    where: { status: "PUBLISHED", OR: [{ projectId: project.id }, { id: { in: requiredQuizIds } }] },
+    select: { id: true, title: true, xpReward: true, _count: { select: { questions: true } }, attempts: { where: { studentId }, select: { percent: true } } },
+  });
+
   return {
     id: project.id,
     moduleId: project.module.id,
@@ -184,6 +199,14 @@ export async function studentProjectPanel(studentId: string, projectId: string):
       input: publicAutoConfig((c.autoConfig as AutoConfig | null) ?? null),
       score: showScores ? (scores.get(c.id)?.score ?? null) : null,
       comment: showScores ? (scores.get(c.id)?.comment ?? null) : null,
+    })),
+    quizzes: linkedQuizzes.map((q) => ({
+      id: q.id,
+      title: q.title,
+      questionCount: q._count.questions,
+      xpReward: q.xpReward,
+      percent: q.attempts[0]?.percent ?? null,
+      required: requiredQuizIds.includes(q.id),
     })),
     retry: {
       allowed: state === "failed" ? canRetry(lastFailedAt) : false,

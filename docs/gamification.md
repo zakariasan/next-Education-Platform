@@ -11,7 +11,8 @@ up, unlock the next nodes and collect badges.
 | `Module` | Subject track owned by a teacher. `status` DRAFT/PUBLISHED/ARCHIVED. Visible to every student enrolled in one of that teacher's classes. |
 | `Project` | Graph node identity: `moduleId`, `isCore` (common core vs elective), `orderIndex`, `status`, optional pinned position (`pinX`/`pinY`), self many-to-many `prerequisites` ↔ `dependents`. Points to `currentVersionId`. |
 | `ProjectVersion` | Editable content snapshot: title, statement (markdown + `$LaTeX$`), objectives, `estimatedHours`, `xpReward`, `allowedResources`, `threshold` (%) and its `criteria`. Editing a **published** project creates a new version; attempts keep pointing at the version they were made on. |
-| `RubricCriterion` | `weight`, `mode` (`AUTO` / `TEACHER` / `PEER`), `autoConfig` for auto-grading (`NUMERIC`, `MCQ`, `UNIT`). |
+| `RubricCriterion` | `weight`, `mode` (`AUTO` / `TEACHER` / `PEER`), `autoConfig` for auto-grading (`NUMERIC`, `MCQ`, `UNIT`, `QUIZ` — graded from the student's `QuizAttempt` on a linked quiz). |
+| `Quiz` / `QuizAttempt` | Class quizzes (`lib/quiz/`) optionally linked to a module/project; XP `xpReward × percent`, once per student (`XpEvent` key `quiz:<student>:<quiz>`). |
 | `ProjectAttempt` | One student attempt on one project version. State machine `NOT_STARTED → IN_PROGRESS → SUBMITTED → UNDER_REVIEW → VALIDATED | FAILED`. Tracks `startedAt`, `submittedAt`, `actualHours`, `answers`, weighted `score`, `feedback`, `reviewer`, `xpAwarded`, `attemptNumber`. |
 | `CriterionScore` | Score (0–100) per criterion per attempt, with grader and `spotChecked`. |
 | `ReviewAssignment` | Pending/done review of an attempt by a teacher or a peer (peers must have validated the project). |

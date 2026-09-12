@@ -9,9 +9,9 @@ const navItems: NavItem[] = [
   { label: "Classes", icon: BookOpenText, href: "/dashboard/teacher/classes" },
   { label: "Modules", icon: CircuitBoard, href: "/dashboard/teacher/modules" },
   { label: "Reviews", icon: ClipboardCheck, href: "/dashboard/teacher/reviews" },
-  { label: "Assignments & Quizzes", icon: ClipboardList, href: "/dashboard/assignments" },
-  { label: "Students", icon: Users, href: "/dashboard/studensprogress" },
-  { label: "Events", icon: CalendarDays, href: "/dashboard/events" },
+  { label: "Assignments & Quizzes", icon: ClipboardList, href: "/dashboard/teacher/assignments" },
+  { label: "Students", icon: Users, href: "/dashboard/teacher/students" },
+  { label: "Events", icon: CalendarDays, href: "/dashboard/teacher/events" },
 ];
 
 const SideBar = () => <AppSidebar items={navItems} roleLabel="Teacher" profileHref="/dashboard/teacher/profile" />;

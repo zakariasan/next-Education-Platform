@@ -75,6 +75,8 @@ enum XpReason {
   RETRY_PENALTY
   PEER_REVIEW
   BADGE
+  QUIZ
+  SESSION
 }
 
 enum ExerciseType {
@@ -91,6 +93,20 @@ enum EventScope {
   GLOBAL
   SCHOOL
   CLASS
+}
+
+enum EventType {
+  SESSION
+  EXAM
+  OTHER
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE
+  CHECKBOXES
+  TRUE_FALSE
+  SHORT_ANSWER
+  NUMERIC
 }
 
 enum Difficulty {
@@ -128,9 +144,9 @@ model User {
   //relations
   teacherClasses   Class[]  @relation("teacherClasses")
   studentClasses   Class[]  @relation("studentClasses")
-  quizzes          Quiz[]   @relation("teacherQuizzes")
-  submittedQuizzes Quiz[]   @relation("studentQuizzes")
-  lessons          Lesson[] @relation("teacherLessons")
+  quizzes          Quiz[]        @relation("teacherQuizzes")
+  quizAttempts     QuizAttempt[]
+  lessons          Lesson[]      @relation("teacherLessons")
 
   // Seance participation
   participations SeanceParticipation[]
@@ -214,45 +230,84 @@ model Lesson {
   class     Class       @relation(fields: [classId], references: [id])
   classId   String
   materials Materials[]
+  quizzes   Quiz[]
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 }
 
+// Google-Forms style quiz. Belongs to a class; optionally tied to a lesson
+// and/or a Holy Graph module/project (a rubric criterion can require it).
 model Quiz {
-  id        String @id @default(cuid())
-  title     String
-  teacherId String // This connects to a teacher
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      LessonStatus @default(DRAFT)
+
   teacher   User   @relation("teacherQuizzes", fields: [teacherId], references: [id])
+  teacherId String
   class     Class  @relation(fields: [classId], references: [id])
   classId   String
 
+  lesson    Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  lessonId  String?
+  module    Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  moduleId  String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+
   dueDate     DateTime?
-  duration    Int? // in minutes
-  submissions User[]    @relation("studentQuizzes")
+  duration    Int? // minutes, null = untimed
+  xpReward    Int       @default(50) // XP at 100 %
+  showAnswers Boolean   @default(true)
 
   questions Question[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  attempts  QuizAttempt[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([classId])
 }
 
 model Question {
-  id        String   @id @default(cuid())
-  text      String
-  imageUrl  String? // Optional image
-  answers   Answer[] // List of options
-  correct   Int // Index of correct answer in answers[]
-  quiz      Quiz     @relation(fields: [quizId], references: [id])
-  quizId    String
+  id     String @id @default(cuid())
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId String
+
+  type       QuestionType @default(MULTIPLE_CHOICE)
+  text       String
+  imageUrl   String?
+  points     Int          @default(1)
+  required   Boolean      @default(true)
+  orderIndex Int          @default(0)
+
+  options        Json? // string[] for choice questions
+  correctIndexes Int[]   @default([])
+  correctText    String? // SHORT_ANSWER: accepted answers separated by "|"
+  correctNumber  Float?
+  tolerance      Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model Answer {
-  id         String   @id @default(cuid())
-  text       String
-  index      Int
-  question   Question @relation(fields: [questionId], references: [id])
-  questionId String
+model QuizAttempt {
+  id        String @id @default(cuid())
+  quiz      Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  quizId    String
+  student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentId String
+
+  answers   Json // { [questionId]: number | number[] | string }
+  score     Float // points earned
+  maxScore  Float
+  percent   Float // 0..100
+  xpAwarded Int   @default(0)
+
+  startedAt   DateTime  @default(now())
+  submittedAt DateTime?
+
+  @@unique([quizId, studentId])
 }
 
 model Materials {
@@ -282,6 +337,12 @@ model Seance {
 
   class   Class  @relation(fields: [classId], references: [id])
   classId String
+
+  // Planned sessions are created from an Event; settledAt marks when the
+  // automatic "everyone present, +1 XP" pass ran after the session ended.
+  event     Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId   String?   @unique
+  settledAt DateTime?
 
   participations SeanceParticipation[]
 
@@ -469,6 +530,7 @@ model Module {
   teacherId String
 
   projects Project[]
+  quizzes  Quiz[]
   xpEvents XpEvent[]
 
   createdAt DateTime @default(now())
@@ -503,6 +565,7 @@ model Project {
   dependents    Project[] @relation("ProjectPrerequisites")
 
   attempts ProjectAttempt[]
+  quizzes  Quiz[]
   xpEvents XpEvent[]
 
   createdAt DateTime @default(now())
@@ -733,8 +796,11 @@ model Event {
   id          String     @id @default(cuid())
   title       String
   description String?
-  date        DateTime
+  date        DateTime // start
+  endsAt      DateTime?
+  type        EventType  @default(OTHER)
   scope       EventScope @default(CLASS)
+  seance      Seance?
 
   schoolId String?
   school   School? @relation(fields: [schoolId], references: [id])

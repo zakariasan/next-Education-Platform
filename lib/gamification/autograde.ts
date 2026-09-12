@@ -1,7 +1,16 @@
 export type AutoConfig =
   | { type: "NUMERIC"; answer: number; tolerance: number; unit?: string }
   | { type: "MCQ"; choices: string[]; correctIndexes: number[] }
-  | { type: "UNIT"; expectedUnit: string };
+  | { type: "UNIT"; expectedUnit: string }
+  // Graded from the student's QuizAttempt (DB lookup in the pipeline):
+  // minPercent set → 100 or 0, otherwise the raw quiz percentage.
+  | { type: "QUIZ"; quizId: string; minPercent?: number };
+
+export function quizCriterionScore(cfg: Extract<AutoConfig, { type: "QUIZ" }>, percent: number | null): number {
+  if (percent == null) return 0;
+  if (cfg.minPercent != null) return percent >= cfg.minPercent ? 100 : 0;
+  return Math.max(0, Math.min(100, Math.round(percent)));
+}
 
 const UNIT_ALIASES: Record<string, string> = {
   "m/s": "m·s⁻¹",
@@ -59,6 +68,8 @@ export function autoGrade(config: AutoConfig, answer: unknown): number {
       if (typeof answer !== "string") return 0;
       return normalizeUnit(answer) === normalizeUnit(config.expectedUnit) ? 100 : 0;
     }
+    case "QUIZ":
+      return typeof answer === "number" ? quizCriterionScore(config, answer) : 0;
     default:
       return 0;
   }

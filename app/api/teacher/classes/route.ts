@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
 
   const searchParams = req.nextUrl.searchParams
   const userId = searchParams.get('userId')
-  console.log("SErver Check session: ", user)
   if(!userId || !user){
     return Response.json({ error: "User ID required by server" }, { status: 400 })
   }
@@ -77,7 +76,6 @@ export async function GET(req: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
-    console.log("Check back ++++", classes)
     return NextResponse.json(classes, { status: 200 });
   } catch (error) {
     console.log("Check back ++++ERROR", error)

@@ -5,14 +5,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
 
+const ROLE_REFRESH_MS = 5 * 60_000;
+
 export async function getAuthenticated() {
   const session = await getServerSession(authOptions);
-
-  if (!session?.user?.email) return null;
-  return await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true },
-  });
+  if (!session?.user?.id) return null;
+  return { id: session.user.id };
 }
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -113,17 +111,24 @@ export const authOptions: NextAuthOptions = {
           token.role = dbUser.role;
           token.provider = dbUser.provider;
           token.avatar = dbUser.avatar;
+          token.refreshedAt = Date.now();
         }
       } else if (token.id) {
-        // Re-check on every session read so a role picked after sign-in
-        // (or changed later) takes effect without forcing a re-login.
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-        });
-        if (dbUser) {
-          token.role = dbUser.role;
-          token.provider = dbUser.provider;
-          token.avatar = dbUser.avatar;
+        // Re-sync role/avatar from the DB, but not on every request: a role
+        // picked after sign-in shows up immediately (role is null until then),
+        // later changes within ROLE_REFRESH_MS.
+        const stale = !token.role || Date.now() - ((token.refreshedAt as number | undefined) ?? 0) > ROLE_REFRESH_MS;
+        if (stale) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { role: true, provider: true, avatar: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.provider = dbUser.provider;
+            token.avatar = dbUser.avatar;
+          }
+          token.refreshedAt = Date.now();
         }
       }
       return token;

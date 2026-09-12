@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Bot, CheckCircle2, Clock, GitBranch, GraduationCap, Lock, Play, RotateCcw, Send, Users, X, XCircle, Zap, Hourglass } from "lucide-react";
+import Link from "next/link";
+import { Bot, CheckCircle2, Clock, GitBranch, GraduationCap, Lock, Play, RotateCcw, Send, Users, X, XCircle, Zap, Hourglass, ClipboardList } from "lucide-react";
 import MathMarkdown from "@/components/MathMarkdown";
 import type { StudentProjectPanel } from "@/lib/gamification/student";
 import type { FinalizeResult } from "@/lib/gamification/pipeline";
@@ -88,6 +89,7 @@ const ProjectPanel = ({ projectId, onClose, onChanged }: Props) => {
   const submit = async () => {
     if (!data) return;
     const missing = data.criteria.filter((c) => {
+      if ((c.input as { type?: string } | null)?.type === "QUIZ") return false;
       const a = answers[c.id];
       if (a == null || a === "") return true;
       if (typeof a === "object" && !Array.isArray(a) && (a as { value?: unknown }).value === "") return true;
@@ -217,6 +219,26 @@ const ProjectPanel = ({ projectId, onClose, onChanged }: Props) => {
           </div>
         )}
 
+        {data.quizzes.length > 0 && (
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold mb-1.5">Quizzes</p>
+            <div className="space-y-2">
+              {data.quizzes.map((q) => (
+                <Link key={q.id} href={`/dashboard/student/quizzes/${q.id}`} className="flex items-center gap-3 rounded-xl border border-border p-3 hover:border-primary/50 hover:bg-muted/40 transition-colors">
+                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${q.percent != null ? "bg-growth/15 text-growth" : "bg-accent/25 text-accent-foreground"}`}>
+                    {q.percent != null ? <CheckCircle2 className="w-4 h-4" /> : <ClipboardList className="w-4 h-4" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold truncate">{q.title}</span>
+                    <span className="block text-[11px] text-muted-foreground">{q.questionCount} questions · {q.xpReward} XP{q.required ? " · required by the rubric" : ""}</span>
+                  </span>
+                  <span className={`text-sm font-bold shrink-0 ${q.percent != null ? "text-growth" : "text-primary"}`}>{q.percent != null ? `${q.percent}%` : "Take →"}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Rubric / answers */}
         <div>
           <div className="flex items-center justify-between mb-2">
@@ -264,6 +286,9 @@ const ProjectPanel = ({ projectId, onClose, onChanged }: Props) => {
                             );
                           })}
                         </div>
+                      )}
+                      {c.mode === "AUTO" && input?.type === "QUIZ" && (
+                        <p className="text-xs text-muted-foreground">Graded automatically from your quiz result above{(input as { minPercent?: number | null }).minPercent != null ? ` (pass at ${(input as { minPercent?: number | null }).minPercent}%)` : ""}.</p>
                       )}
                       {c.mode === "AUTO" && input?.type === "UNIT" && (
                         <Input placeholder="Unit, e.g. m/s²" value={String(val ?? "")} onChange={(e) => setAnswers({ ...answers, [c.id]: e.target.value })} />
