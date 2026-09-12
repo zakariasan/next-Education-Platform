@@ -37,16 +37,44 @@ enum AttendanceStatus {
   EXCUSED
 }
 
-enum ProjectScope {
-  CLASS
-  SCHOOL
-  CURRICULUM
+// Gamified project-based learning (see docs/gamification.md)
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
 
-enum SubmissionStatus {
-  PENDING
+enum CriterionMode {
+  AUTO
+  TEACHER
+  PEER
+}
+
+enum AttemptState {
+  NOT_STARTED
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
   VALIDATED
-  REJECTED
+  FAILED
+}
+
+enum ReviewKind {
+  TEACHER
+  PEER
+}
+
+enum ReviewStatus {
+  PENDING
+  DONE
+}
+
+enum XpReason {
+  PROJECT_VALIDATED
+  SPEED_BONUS
+  RETRY_PENALTY
+  PEER_REVIEW
+  BADGE
 }
 
 enum ExerciseType {
@@ -119,10 +147,16 @@ model User {
   // Class enrollment metadata (ban tracking etc.)
   enrollments ClassEnrollment[]
 
-  // Projects
-  projectsCreated      Project[]           @relation("TeacherProjects")
-  projectSubmissions   ProjectSubmission[]
-  validatedSubmissions ProjectSubmission[] @relation("Validator")
+  // Gamification: modules, projects, attempts, reviews, XP, badges
+  correctionPoints  Int                @default(0)
+  modules           Module[]           @relation("TeacherModules")
+  projectsCreated   Project[]          @relation("TeacherProjects")
+  projectAttempts   ProjectAttempt[]   @relation("AttemptStudent")
+  reviewedAttempts  ProjectAttempt[]   @relation("AttemptReviewer")
+  gradedCriteria    CriterionScore[]   @relation("CriterionGrader")
+  reviewAssignments ReviewAssignment[] @relation("ReviewAssignee")
+  xpEvents          XpEvent[]
+  badges            UserBadge[]
 
   // Exercises
   exerciseSubmissions ExerciseSubmission[]
@@ -159,8 +193,6 @@ model Class {
   seances     Seance[]
   exams       Exam[]
   enrollments ClassEnrollment[]
-  skillNodes  SkillNode[]
-  projects    Project[]
   exercises   Exercise[]
   events      Event[]
   messages    Message[]
@@ -305,10 +337,6 @@ model Exam {
   maxScore    Int       @default(20) // the grading base (e.g., 20 or 100)
   maxXP       Int       @default(100) // how many XP at 100% score
 
-  // Optional placement into a skill-tree circle/level
-  nodeId String?
-  node   SkillNode? @relation(fields: [nodeId], references: [id])
-
   files   ExamFile[]
   results ExamResult[]
   ratings ExamRating[]
@@ -380,7 +408,6 @@ model School {
 
   teachers SchoolTeacher[]
   classes  Class[]
-  projects Project[]
   events   Event[]
 
   createdAt DateTime @default(now())
@@ -425,71 +452,227 @@ model ClassEnrollment {
   @@unique([classId, studentId])
 }
 
-// feature of the skill tree ("holy graph"): ordered circles/levels per class
-model SkillNode {
-  id          String  @id @default(cuid())
-  class       Class   @relation(fields: [classId], references: [id])
-  classId     String
+// ---------------------------------------------------------------------------
+// Gamified project-based learning ("Holy Graph"). See docs/gamification.md.
+// ---------------------------------------------------------------------------
+
+// A subject track owned by a teacher (e.g. "Physics – Mechanics"). Visible to
+// every student enrolled in one of that teacher's classes.
+model Module {
+  id          String        @id @default(cuid())
   title       String
   description String?
-  level       Int // ordering for linear unlock: clear level N to reach N+1
+  subject     String        @default("Physics")
+  status      ProjectStatus @default(DRAFT)
+
+  teacher   User   @relation("TeacherModules", fields: [teacherId], references: [id])
+  teacherId String
 
   projects Project[]
-  exams    Exam[]
+  xpEvents XpEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Project identity: graph node. Editable content lives in ProjectVersion so
+// that published edits create a new version while old attempts stay linked.
+model Project {
+  id String @id @default(cuid())
+
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId String
+
+  teacher   User   @relation("TeacherProjects", fields: [teacherId], references: [id])
+  teacherId String
+
+  isCore     Boolean       @default(true)
+  orderIndex Int           @default(0)
+  status     ProjectStatus @default(DRAFT)
+
+  // Teacher-pinned Holy Graph position (unit coordinates); null = auto layout.
+  pinX Float?
+  pinY Float?
+
+  currentVersion   ProjectVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  currentVersionId String?         @unique
+  versions         ProjectVersion[] @relation("ProjectVersions")
+
+  // Prerequisite edges (prerequisite -> this project)
+  prerequisites Project[] @relation("ProjectPrerequisites")
+  dependents    Project[] @relation("ProjectPrerequisites")
+
+  attempts ProjectAttempt[]
+  xpEvents XpEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([classId, level])
+  @@index([moduleId])
 }
 
-model Project {
-  id          String  @id @default(cuid())
+model ProjectVersion {
+  id            String  @id @default(cuid())
+  project       Project @relation("ProjectVersions", fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  versionNumber Int
+
+  title            String
+  statement        String // markdown with $LaTeX$
+  objectives       Json // string[]
+  estimatedHours   Float
+  xpReward         Int
+  allowedResources Json // string[]
+  threshold        Int    @default(70) // weighted % needed to validate
+
+  criteria RubricCriterion[]
+  attempts ProjectAttempt[]
+
+  currentOf Project? @relation("CurrentVersion")
+
+  createdAt DateTime @default(now())
+
+  @@unique([projectId, versionNumber])
+}
+
+model RubricCriterion {
+  id        String         @id @default(cuid())
+  version   ProjectVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  versionId String
+
   title       String
   description String?
+  weight      Int
+  mode        CriterionMode
+  orderIndex  Int           @default(0)
 
-  teacher   User         @relation("TeacherProjects", fields: [teacherId], references: [id])
-  teacherId String
-  scope     ProjectScope @default(CLASS)
+  // AUTO grading config:
+  //   { type: "NUMERIC", answer: number, tolerance: number, unit?: string }
+  //   { type: "MCQ", choices: string[], correctIndexes: number[] }
+  //   { type: "UNIT", expectedUnit: string }
+  autoConfig Json?
 
-  // classId when scope=CLASS, schoolId when scope=SCHOOL, both null when
-  // scope=CURRICULUM (a reusable template assignable to any class/school).
-  classId  String?
-  class    Class?  @relation(fields: [classId], references: [id])
-  schoolId String?
-  school   School? @relation(fields: [schoolId], references: [id])
-
-  node   SkillNode? @relation(fields: [nodeId], references: [id])
-  nodeId String?
-
-  xpReward Int @default(0)
-
-  submissions ProjectSubmission[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  scores CriterionScore[]
 }
 
-model ProjectSubmission {
-  id        String  @id @default(cuid())
-  project   Project @relation(fields: [projectId], references: [id])
+model ProjectAttempt {
+  id String @id @default(cuid())
+
+  project   Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
-  student   User    @relation(fields: [studentId], references: [id])
+  version   ProjectVersion @relation(fields: [versionId], references: [id])
+  versionId String
+  student   User           @relation("AttemptStudent", fields: [studentId], references: [id], onDelete: Cascade)
   studentId String
 
-  status  SubmissionStatus @default(PENDING)
-  content String?
+  attemptNumber Int          @default(1)
+  state         AttemptState @default(NOT_STARTED)
 
-  validatedBy   User?     @relation("Validator", fields: [validatedById], references: [id])
-  validatedById String?
-  validatedAt   DateTime?
+  startedAt   DateTime?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  actualHours Float?
+
+  answers  Json? // { [criterionId]: unknown }
+  score    Float? // weighted %, 0..100
+  feedback String?
+
+  reviewer   User?   @relation("AttemptReviewer", fields: [reviewerId], references: [id])
+  reviewerId String?
 
   xpAwarded Int @default(0)
 
+  criterionScores CriterionScore[]
+  reviews         ReviewAssignment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([projectId, studentId])
+  @@unique([projectId, studentId, attemptNumber])
+  @@index([studentId])
+  @@index([state])
+}
+
+model CriterionScore {
+  id          String          @id @default(cuid())
+  attempt     ProjectAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptId   String
+  criterion   RubricCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  criterionId String
+
+  score       Float // 0..100
+  mode        CriterionMode
+  grader      User?   @relation("CriterionGrader", fields: [graderId], references: [id])
+  graderId    String?
+  comment     String?
+  spotChecked Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([attemptId, criterionId])
+}
+
+model ReviewAssignment {
+  id         String         @id @default(cuid())
+  attempt    ProjectAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  attemptId  String
+  reviewer   User           @relation("ReviewAssignee", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewerId String
+
+  kind        ReviewKind
+  status      ReviewStatus @default(PENDING)
+  spotChecked Boolean      @default(false)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([attemptId, reviewerId])
+  @@index([reviewerId, status])
+}
+
+// Append-only XP ledger. User.totalXP is kept in sync for the existing
+// leaderboard/attendance code. dedupeKey guarantees XP is awarded once per
+// (student, project) regardless of attempt count.
+model XpEvent {
+  id     String   @id @default(cuid())
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  amount Int
+  reason XpReason
+
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  projectId String?
+  module    Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  moduleId  String?
+  attemptId String?
+
+  dedupeKey String? @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, moduleId])
+}
+
+model Badge {
+  id          String @id @default(cuid())
+  code        String @unique
+  title       String
+  description String
+  icon        String // lucide icon name
+
+  users UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  badgeId   String
+  awardedAt DateTime @default(now())
+
+  @@unique([userId, badgeId])
 }
 
 model Exercise {
