@@ -187,7 +187,7 @@ export default function ResultsTable({
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-muted-foreground">Loading results...</p>
           </div>
         </CardContent>
@@ -200,7 +200,7 @@ export default function ResultsTable({
       <Card>
         <CardContent className="p-6">
           <div className="text-center">
-            <p className="text-red-500">{error}</p>
+            <p className="text-destructive">{error}</p>
             <Button onClick={fetchResults} className="mt-2">
               Try Again
             </Button>
@@ -223,7 +223,7 @@ export default function ResultsTable({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5 text-blue-500" />
+              <UserCheck className="h-5 w-5 text-primary" />
               <div>
                 <p className="text-sm font-medium">Students</p>
                 <p className="text-2xl font-bold">{results.length}</p>
@@ -235,7 +235,7 @@ export default function ResultsTable({
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-green-500" />
+              <Trophy className="h-5 w-5 text-secondary" />
               <div>
                 <p className="text-sm font-medium">Graded</p>
                 <p className="text-2xl font-bold">{gradedCount}</p>
@@ -316,7 +316,7 @@ export default function ResultsTable({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Trophy className="h-4 w-4 text-yellow-500" />
+                        <Trophy className="h-4 w-4 text-accent" />
                         <span className="font-medium">{result.xpAwarded}</span>
                       </div>
                     </TableCell>

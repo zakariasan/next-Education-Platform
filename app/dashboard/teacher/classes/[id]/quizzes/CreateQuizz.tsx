@@ -28,10 +28,10 @@ const CreateQuizz = () => {
               {/* Dot */}
               <div
                 className={`w-8 h-8 rounded-full flex items-center  justify-center z-10 text-sm
-                ${index === currentStep ? " border-4 border-indigo-600 " : "bg-gray-300 text-gray-700"}`}
+                ${index === currentStep ? " border-4 border-primary " : "bg-muted text-muted-foreground"}`}
               >
                 <span
-                  className={`${index < currentStep ? "bg-indigo-600 text-white" : "bg-gray-300"} rounded-full w-6 h-6 items-center `}
+                  className={`${index < currentStep ? "bg-primary text-primary-foreground" : "bg-muted"} rounded-full w-6 h-6 items-center `}
                 ></span>
               </div>
               {/* Label */}
@@ -41,7 +41,7 @@ const CreateQuizz = () => {
               {index < steps.length - 1 && (
                 <div className="absolute  top-1/4 left-1/2 w-full right-4 h-1 z-1 rounded">
                   <div
-                    className={`h-1  ${currentStep > index ? "bg-blue-600" : "bg-gray-300"}`}
+                    className={`h-1  ${currentStep > index ? "bg-primary" : "bg-muted"}`}
                   ></div>
                 </div>
               )}
@@ -51,7 +51,7 @@ const CreateQuizz = () => {
         <Separator />
 
         {/* Step Content */}
-        <div className="border rounded-lg p-6 bg-white shadow-sm">
+        <div className="border rounded-lg p-6 bg-card shadow-sm">
           {currentStep === 0 && (
             <>
               <h2 className="text-xl font-semibold mb-2">

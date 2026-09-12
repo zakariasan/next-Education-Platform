@@ -3,7 +3,9 @@
 import React from "react";
 import CreateClassPOP from "../(components)/CreateClassPOP";
 import TeacherClass from "./TeacherClass";
+import { BookOpenText } from "lucide-react";
 import { Class, User } from "@prisma/client";
+import EmptyState from "@/components/EmptyState";
 
 type TeacherClassesProps = {
   classes?: (Class & {
@@ -13,38 +15,45 @@ type TeacherClassesProps = {
 };
 
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
+  const safeClasses = Array.isArray(classes) ? classes : [];
 
-
-    const safeClasses = Array.isArray(classes) ? classes : [];
-  
-  console.log("Checking : ", Array.isArray(classes), classes, safeClasses);
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        <h1 className="text-3xl font-extrabold text-slate-800">My Classes</h1>
-      </div>
-
-      {/* Stats & Create */}
-      <div className="flex flex-col sm:flex-row justify-between items-center bg-white shadow-md rounded-2xl px-6 py-4 gap-4">
-        <div className="flex gap-6">
-          <div className="flex flex-col items-center bg-blue-50 rounded-xl px-4 py-2 shadow-inner">
-            <span className="text-xl font-bold text-blue-700">
-              {safeClasses.length}
-            </span>
-            <p className="text-sm text-gray-500">Classes</p>
+      {/* Hero header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-secondary p-6 md:p-8 shadow-lg">
+        <svg className="absolute -top-10 -right-10 w-48 h-48 text-white/10 pointer-events-none" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+          <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="1.5" strokeDasharray="6 6" />
+          <circle cx="50" cy="50" r="30" stroke="currentColor" strokeWidth="1.5" />
+        </svg>
+        <div className="relative flex flex-col sm:flex-row items-center justify-between gap-5">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-sm flex items-center justify-center shrink-0">
+              <BookOpenText className="w-7 h-7 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-white tracking-tight">My Classes</h1>
+              <p className="text-white/70 text-sm mt-0.5">
+                {safeClasses.length} active classroom{safeClasses.length === 1 ? "" : "s"}
+              </p>
+            </div>
           </div>
-          {/* Optional: Lessons, Quizzes stats */}
+          <CreateClassPOP />
         </div>
-        <CreateClassPOP />
       </div>
 
       {/* Classes Grid */}
-      <div className="flex  gap-2">
-        {safeClasses.map((itemClass) => (
-          <TeacherClass key={itemClass.id} itemClass={itemClass} />
-        ))}
-      </div>
+      {safeClasses.length === 0 ? (
+        <EmptyState
+          title="No classes yet"
+          quote="An empty class has no mass — nothing to orbit, nothing to pull toward. Create one and give it gravity."
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {safeClasses.map((itemClass, i) => (
+            <TeacherClass key={itemClass.id} itemClass={itemClass} index={i} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

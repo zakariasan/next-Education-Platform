@@ -137,20 +137,20 @@ export default function SeancePage() {
   const totalStudents = students.length;
 
   return (
-    <div className="min-h-screen bg-white from-slate-50 via-blue-50 to-indigo-50  md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10  md:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header Section */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-white/20 shadow-sm">
-            <Calendar className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-slate-600">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card/70 backdrop-blur-sm rounded-full border border-border shadow-sm">
+            <Calendar className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground">
               Session Management
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-primary/80 bg-clip-text text-transparent">
             Attendance & Performance Tracking
           </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Track student attendance and award experience points for active
             participation
           </p>
@@ -169,17 +169,17 @@ export default function SeancePage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/70 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Users className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Total Students
                   </p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-foreground">
                     {totalStudents}
                   </p>
                 </div>
@@ -187,17 +187,17 @@ export default function SeancePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/70 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <Users className="h-5 w-5 text-emerald-600" />
+                <div className="p-2 bg-secondary/15 rounded-lg">
+                  <Users className="h-5 w-5 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Present Today
                   </p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-foreground">
                     {presentCount}
                   </p>
                 </div>
@@ -205,17 +205,17 @@ export default function SeancePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-card/70 backdrop-blur-sm border-border shadow-lg hover:shadow-xl transition-all duration-300">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <Award className="h-5 w-5 text-amber-600" />
+                <div className="p-2 bg-accent/20 rounded-lg">
+                  <Award className="h-5 w-5 text-accent-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-600">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Attendance Rate
                   </p>
-                  <p className="text-2xl font-bold text-slate-900">
+                  <p className="text-2xl font-bold text-foreground">
                     {totalStudents > 0
                       ? Math.round((presentCount / totalStudents) * 100)
                       : 0}
@@ -228,10 +228,10 @@ export default function SeancePage() {
         </div>
 
         {/* Main Table */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+        <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
               Student Roster
             </CardTitle>
           </CardHeader>
@@ -239,14 +239,14 @@ export default function SeancePage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-slate-50/80 border-slate-200/50">
-                    <TableHead className="font-semibold text-slate-700 py-4 px-6">
+                  <TableRow className="bg-muted/50 border-border">
+                    <TableHead className="font-semibold text-foreground/80 py-4 px-6">
                       Student Name
                     </TableHead>
-                    <TableHead className="text-center font-semibold text-slate-700 py-4">
+                    <TableHead className="text-center font-semibold text-foreground/80 py-4">
                       Attendance Status
                     </TableHead>
-                    <TableHead className="text-center font-semibold text-slate-700 py-4">
+                    <TableHead className="text-center font-semibold text-foreground/80 py-4">
                       Experience Points
                     </TableHead>
                   </TableRow>
@@ -255,15 +255,15 @@ export default function SeancePage() {
                   {students.map((student, index) => (
                     <TableRow
                       key={student.id}
-                      className="hover:bg-slate-50/50 transition-colors border-slate-200/30"
+                      className="hover:bg-muted/50 transition-colors border-border/60"
                     >
                       <TableCell className="py-4 px-6">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                          <div className="w-8 h-8 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-primary-foreground text-sm font-semibold">
                             {student?.student.name?.charAt(0)?.toUpperCase() ||
                               "?"}
                           </div>
-                          <span className="font-medium text-slate-800">
+                          <span className="font-medium text-foreground">
                             {student?.student.name}
                           </span>
                         </div>
@@ -284,7 +284,7 @@ export default function SeancePage() {
                             });
                           }}
                         >
-                          <SelectTrigger className="w-36 mx-auto bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all">
+                          <SelectTrigger className="w-36 mx-auto bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all">
                             <SelectValue>
                               <Badge
                                 variant="outline"
@@ -294,12 +294,12 @@ export default function SeancePage() {
                               </Badge>
                             </SelectValue>
                           </SelectTrigger>
-                          <SelectContent className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl">
+                          <SelectContent className="bg-card/95 backdrop-blur-sm border-border shadow-xl">
                             {statuses.map((status) => (
                               <SelectItem
                                 key={status}
                                 value={status}
-                                className="hover:bg-slate-50/80"
+                                className="hover:bg-muted/80"
                               >
                                 <Badge
                                   variant="outline"
@@ -316,11 +316,11 @@ export default function SeancePage() {
                       {/* XP input */}
                       <TableCell className="text-center py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <Award className="h-4 w-4 text-amber-500" />
+                          <Award className="h-4 w-4 text-accent" />
                           <Input
                             type="number"
                             value={student.points || 0}
-                            className="w-20 text-center bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                            className="w-20 text-center bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             min="0"
                             max="100"
                             onChange={(e) => {
@@ -341,11 +341,11 @@ export default function SeancePage() {
                       {/* XP Notes */}
                       <TableCell className="text-center py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <Award className="h-4 w-4 text-amber-500" />
+                          <Award className="h-4 w-4 text-accent" />
                           <Input
                             type="text"
                             value={student.notes || ''}
-                            className="w-20 text-center bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                            className="w-20 text-center bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                             onChange={(e) => {
                               const note = e.target.value;
                               setStudents((prev) =>
@@ -366,13 +366,13 @@ export default function SeancePage() {
         </Card>
 
         {students.length === 0 && (
-          <Card className="bg-white/70 backdrop-blur-sm border-white/20 shadow-lg">
+          <Card className="bg-card/70 backdrop-blur-sm border-border shadow-lg">
             <CardContent className="p-8 text-center">
-              <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-slate-600 mb-2">
+              <Users className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">
                 No Students Found
               </h3>
-              <p className="text-slate-500">
+              <p className="text-muted-foreground">
                 Students will appear here once they are enrolled in this
                 session.
               </p>

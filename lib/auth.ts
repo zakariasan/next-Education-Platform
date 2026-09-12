@@ -114,6 +114,17 @@ export const authOptions: NextAuthOptions = {
           token.provider = dbUser.provider;
           token.avatar = dbUser.avatar;
         }
+      } else if (token.id) {
+        // Re-check on every session read so a role picked after sign-in
+        // (or changed later) takes effect without forcing a re-login.
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+          token.provider = dbUser.provider;
+          token.avatar = dbUser.avatar;
+        }
       }
       return token;
     },

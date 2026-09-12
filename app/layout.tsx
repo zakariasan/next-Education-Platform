@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Outfit } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import SessionWrapper from "./sessionWrapper";
-const outfit= Outfit({
-  variable: "--font-outfit",
+import { ThemeProvider } from "@/components/theme-provider";
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
   subsets: ["latin"],
 });
 export const metadata: Metadata = {
@@ -18,15 +19,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
-        className={` ${outfit.variable} antialiased`}
+        className={` ${jakarta.variable} antialiased`}
       >
-        <SessionWrapper>
-
-        {children}
-        <Toaster richColors  position="bottom-center" expand={true} />
-        </SessionWrapper>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <SessionWrapper>
+            {children}
+            <Toaster richColors position="bottom-center" expand={true} />
+          </SessionWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );

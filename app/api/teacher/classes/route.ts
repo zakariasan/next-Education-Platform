@@ -19,11 +19,26 @@ export async function POST(req: NextRequest) {
   }
   const key = nanoid(6);
   try {
-    const { name, description } = await req.json();
+    const { name, description, schoolId } = await req.json();
     if (!name) {
       return NextResponse.json(
         { error: "Missing Name of the Class!!" },
         { status: 400 },
+      );
+    }
+    if (!schoolId) {
+      return NextResponse.json(
+        { error: "Missing schoolId" },
+        { status: 400 },
+      );
+    }
+    const membership = await prisma.schoolTeacher.findUnique({
+      where: { schoolId_teacherId: { schoolId, teacherId: user.id } },
+    });
+    if (!membership) {
+      return NextResponse.json(
+        { error: "You are not a member of this school" },
+        { status: 403 },
       );
     }
     const newClass = await prisma.class.create({
@@ -32,6 +47,7 @@ export async function POST(req: NextRequest) {
         description,
         key,
         teacherId: user.id,
+        schoolId,
       },
     });
 

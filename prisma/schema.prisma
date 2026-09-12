@@ -37,6 +37,52 @@ enum AttendanceStatus {
   EXCUSED
 }
 
+enum ProjectScope {
+  CLASS
+  SCHOOL
+  CURRICULUM
+}
+
+enum SubmissionStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+enum ExerciseType {
+  YES_NO
+  CHECK_TEST
+}
+
+enum MessageStatus {
+  PENDING
+  ACCEPTED
+}
+
+enum EventScope {
+  GLOBAL
+  SCHOOL
+  CLASS
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum MaterialFormat {
+  DOCUMENT
+  LATEX
+}
+
+enum CompileStatus {
+  NONE
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 model User {
   id        String   @id @default(cuid())
   name      String
@@ -61,9 +107,32 @@ model User {
   // Seance participation
   participations SeanceParticipation[]
 
-  //Exam 
-  exams   Exam[]       @relation("TeacherExams") // 👈 exams this teacher created
-  results ExamResult[]
+  //Exam
+  exams       Exam[]       @relation("TeacherExams") // 👈 exams this teacher created
+  results     ExamResult[]
+  examRatings ExamRating[]
+
+  // Schools
+  ownedSchools      School[]        @relation("SchoolCreator")
+  schoolMemberships SchoolTeacher[]
+
+  // Class enrollment metadata (ban tracking etc.)
+  enrollments ClassEnrollment[]
+
+  // Projects
+  projectsCreated      Project[]           @relation("TeacherProjects")
+  projectSubmissions   ProjectSubmission[]
+  validatedSubmissions ProjectSubmission[] @relation("Validator")
+
+  // Exercises
+  exerciseSubmissions ExerciseSubmission[]
+
+  // Messaging
+  sentMessages     Message[] @relation("StudentMessages")
+  receivedMessages Message[] @relation("TeacherMessages")
+
+  // Events
+  eventsCreated Event[]
 }
 
 model Class {
@@ -76,13 +145,27 @@ model Class {
   teacher   User   @relation("teacherClasses", fields: [teacherId], references: [id])
   students  User[] @relation("studentClasses")
 
-  lessons   Lesson[]
-  quizzes   Quiz[]
-  materials Materials[]
-  seances   Seance[]
-  exams     Exam[]
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  // Nullable in the DB (see prisma/backfill-schools.ts) even though every
+  // class is meant to belong to a school going forward; this project uses
+  // `prisma db push` against a live DB with existing rows, so the column
+  // can't be pushed as required without a backfill pass first. Enforce
+  // "school required" at the application layer for new classes.
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  lessons     Lesson[]
+  quizzes     Quiz[]
+  materials   Materials[]
+  seances     Seance[]
+  exams       Exam[]
+  enrollments ClassEnrollment[]
+  skillNodes  SkillNode[]
+  projects    Project[]
+  exercises   Exercise[]
+  events      Event[]
+  messages    Message[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model Lesson {
@@ -149,6 +232,12 @@ model Materials {
   createdAt DateTime @default(now())
   Class     Class?   @relation(fields: [classId], references: [id])
   classId   String?
+
+  // LaTeX source support (see ExamFile for the same pattern).
+  format        MaterialFormat @default(DOCUMENT)
+  sourceContent String?
+  compileStatus CompileStatus  @default(NONE)
+  compiledUrl   String?
 }
 
 // A teaching session / meeting
@@ -213,23 +302,38 @@ model Exam {
   classId     String
   teacher     User      @relation("TeacherExams", fields: [teacherId], references: [id])
   teacherId   String
-maxScore    Int       @default(20)     // the grading base (e.g., 20 or 100)
-  maxXP       Int       @default(100)    // how many XP at 100% score
+  maxScore    Int       @default(20) // the grading base (e.g., 20 or 100)
+  maxXP       Int       @default(100) // how many XP at 100% score
+
+  // Optional placement into a skill-tree circle/level
+  nodeId String?
+  node   SkillNode? @relation(fields: [nodeId], references: [id])
+
   files   ExamFile[]
   results ExamResult[]
+  ratings ExamRating[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model ExamFile {
-  id        String       @id @default(cuid())
-  exam      Exam         @relation(fields: [examId], references: [id])
-  examId    String
-  name      String
-  url       String
-  kind      ExamFileKind @default(OTHER)
-  createdAt DateTime     @default(now())
+  id     String       @id @default(cuid())
+  exam   Exam         @relation(fields: [examId], references: [id])
+  examId String
+  name   String
+  url    String
+  kind   ExamFileKind @default(OTHER)
+
+  // LaTeX source support: if format=LATEX, url/sourceContent holds the
+  // .tex source and compiledUrl is populated once compiled successfully.
+  // A FAILED compileStatus means nothing gets shown to students.
+  format        MaterialFormat @default(DOCUMENT)
+  sourceContent String?
+  compileStatus CompileStatus  @default(NONE)
+  compiledUrl   String?
+
+  createdAt DateTime @default(now())
 }
 
 model ExamResult {
@@ -247,4 +351,216 @@ model ExamResult {
   updatedAt DateTime @updatedAt
 
   @@unique([examId, studentId]) // one row per student per exam
+}
+
+model ExamRating {
+  id        String @id @default(cuid())
+  exam      Exam   @relation(fields: [examId], references: [id])
+  examId    String
+  student   User   @relation(fields: [studentId], references: [id])
+  studentId String
+
+  difficulty Difficulty
+  feedback   String?
+
+  createdAt DateTime @default(now())
+
+  @@unique([examId, studentId])
+}
+
+// feature of Schools
+
+model School {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  createdBy   User   @relation("SchoolCreator", fields: [createdById], references: [id])
+  createdById String
+
+  teachers SchoolTeacher[]
+  classes  Class[]
+  projects Project[]
+  events   Event[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SchoolTeacher {
+  id String @id @default(cuid())
+
+  school    School @relation(fields: [schoolId], references: [id])
+  schoolId  String
+  teacher   User   @relation(fields: [teacherId], references: [id])
+  teacherId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([schoolId, teacherId])
+}
+
+// Enrollment metadata on top of the existing Class.students m2m
+// (kept additive so join-class/leaderboard/progress/g-attendance keep working).
+model ClassEnrollment {
+  id String @id @default(cuid())
+
+  class     Class  @relation(fields: [classId], references: [id])
+  classId   String
+  student   User   @relation(fields: [studentId], references: [id])
+  studentId String
+
+  banned       Boolean   @default(false)
+  bannedAt     DateTime?
+  bannedReason String?
+
+  // Consecutive-presence streak for the attendance XP bonus (1 XP per
+  // present seance, +50 XP bonus every time the streak hits the threshold).
+  // Bumped/reset by the seance-attendance API (later phase); reset to 0 on
+  // any non-PRESENT attendance.
+  presentStreak Int @default(0)
+
+  joinedAt DateTime @default(now())
+
+  @@unique([classId, studentId])
+}
+
+// feature of the skill tree ("holy graph"): ordered circles/levels per class
+model SkillNode {
+  id          String  @id @default(cuid())
+  class       Class   @relation(fields: [classId], references: [id])
+  classId     String
+  title       String
+  description String?
+  level       Int // ordering for linear unlock: clear level N to reach N+1
+
+  projects Project[]
+  exams    Exam[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([classId, level])
+}
+
+model Project {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+
+  teacher   User         @relation("TeacherProjects", fields: [teacherId], references: [id])
+  teacherId String
+  scope     ProjectScope @default(CLASS)
+
+  // classId when scope=CLASS, schoolId when scope=SCHOOL, both null when
+  // scope=CURRICULUM (a reusable template assignable to any class/school).
+  classId  String?
+  class    Class?  @relation(fields: [classId], references: [id])
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+
+  node   SkillNode? @relation(fields: [nodeId], references: [id])
+  nodeId String?
+
+  xpReward Int @default(0)
+
+  submissions ProjectSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProjectSubmission {
+  id        String  @id @default(cuid())
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+  student   User    @relation(fields: [studentId], references: [id])
+  studentId String
+
+  status  SubmissionStatus @default(PENDING)
+  content String?
+
+  validatedBy   User?     @relation("Validator", fields: [validatedById], references: [id])
+  validatedById String?
+  validatedAt   DateTime?
+
+  xpAwarded Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, studentId])
+}
+
+model Exercise {
+  id      String       @id @default(cuid())
+  class   Class        @relation(fields: [classId], references: [id])
+  classId String
+  topic   String
+  type    ExerciseType
+
+  question String
+
+  // used when type=YES_NO
+  correctAnswer Boolean?
+  // used when type=CHECK_TEST: { choices: string[], correctIndexes: number[] }
+  options       Json?
+
+  xpReward Int @default(0)
+
+  submissions ExerciseSubmission[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ExerciseSubmission {
+  id         String   @id @default(cuid())
+  exercise   Exercise @relation(fields: [exerciseId], references: [id])
+  exerciseId String
+  student    User     @relation(fields: [studentId], references: [id])
+  studentId  String
+
+  passed    Boolean
+  xpAwarded Int     @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([exerciseId, studentId])
+}
+
+model Message {
+  id      String  @id @default(cuid())
+  class   Class?  @relation(fields: [classId], references: [id])
+  classId String?
+
+  sender    User   @relation("StudentMessages", fields: [senderId], references: [id])
+  senderId  String
+  teacher   User   @relation("TeacherMessages", fields: [teacherId], references: [id])
+  teacherId String
+
+  content String
+  status  MessageStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  scope       EventScope @default(CLASS)
+
+  schoolId String?
+  school   School? @relation(fields: [schoolId], references: [id])
+  classId  String?
+  class    Class?  @relation(fields: [classId], references: [id])
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

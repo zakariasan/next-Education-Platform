@@ -1,7 +1,6 @@
-
 "use client";
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,182 +12,198 @@ import {
   TrendingUp,
   Clock,
   Award,
-  Bell,
-  MessageSquare,
-  BarChart3,
-  Activity,
-  Target,
-  Zap,
   CalendarDays,
-  AlertCircle,
   Plus,
   Eye,
-  Edit
+  School2,
+  ClipboardList,
 } from "lucide-react";
 
-import { User } from '@prisma/client';
+import { User } from "@prisma/client";
+import EduBackdrop from "@/components/EduBackdrop";
+
+type ClassSummary = {
+  id: string;
+  name: string;
+  students: number;
+  nextSession: string | null;
+};
+
+type DashboardData = {
+  totalStudents: number;
+  totalClasses: number;
+  upcomingSessions: number;
+  completedSessions: number;
+  avgAttendance: number | string;
+  leaderboard: User[];
+  classes: ClassSummary[];
+};
+
+const emptyDashboard: DashboardData = {
+  totalStudents: 0,
+  totalClasses: 0,
+  upcomingSessions: 0,
+  completedSessions: 0,
+  avgAttendance: 0,
+  leaderboard: [],
+  classes: [],
+};
+
 const MainDashTeach = ({ name_Teacher }: { name_Teacher: string }) => {
-
-  const [dashboardData, setDashboardData] = useState({
-    totalStudents: 0,
-    totalClasses: 0,
-    upcomingSessions: 0,
-    completedSessions: 0,
-    avgAttendance: 0,
-    totalAssignments: 0,
-    leaderboard: []
-  });
-
-
-
-
-
-  // Mock data - replace with real API calls
-  useEffect(() => {
-    // Simulate loading dashboard data
-    setDashboardData({
-      totalStudents: 145,
-      totalClasses: 8,
-      upcomingSessions: 12,
-      completedSessions: 34,
-      avgAttendance: 87.5,
-      totalAssignments: 23,
-      leaderboard: []
-    });
-  }, []);
-
-
+  const [dashboardData, setDashboardData] = useState<DashboardData>(emptyDashboard);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await fetch("/api/teacher/dashboard");
         const data = await res.json();
-        setDashboardData(data);
+        setDashboardData({ ...emptyDashboard, ...data });
       } catch (err) {
         console.error("Error fetching dashboard:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
-
+  const nextSessionDate = dashboardData.classes
+    .map((c) => c.nextSession)
+    .filter((d): d is string => Boolean(d))
+    .sort()[0];
 
   const quickStats = [
     {
       title: "Total Students",
-      value: dashboardData.totalStudents,
-      icon: <Users className="h-6 w-6" />,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "bg-blue-50",
-      change: "+12 this month"
+      value: loading ? "…" : dashboardData.totalStudents,
+      icon: Users,
+      tint: "bg-primary/15 text-primary",
     },
     {
       title: "Active Classes",
-      value: dashboardData.totalClasses,
-      icon: <BookOpen className="h-6 w-6" />,
-      color: "from-emerald-500 to-teal-500",
-      bgColor: "bg-emerald-50",
-      change: "+2 new classes"
+      value: loading ? "…" : dashboardData.totalClasses,
+      icon: BookOpen,
+      tint: "bg-secondary/20 text-secondary",
     },
     {
       title: "Upcoming Sessions",
-      value: dashboardData.upcomingSessions,
-      icon: <Calendar className="h-6 w-6" />,
-      color: "from-purple-500 to-indigo-500",
-      bgColor: "bg-purple-50",
-      change: "Next: Tomorrow 9:00 AM"
+      value: loading ? "…" : dashboardData.upcomingSessions,
+      icon: Calendar,
+      tint: "bg-accent/25 text-accent-foreground",
+      note: nextSessionDate
+        ? `Next: ${new Date(nextSessionDate).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`
+        : undefined,
     },
     {
       title: "Attendance Rate",
-      value: `${dashboardData.avgAttendance}%`,
-      icon: <TrendingUp className="h-6 w-6" />,
-      color: "from-amber-500 to-orange-500",
-      bgColor: "bg-amber-50",
-      change: "+5.2% from last month"
-    }
+      value: loading ? "…" : `${dashboardData.avgAttendance}%`,
+      icon: TrendingUp,
+      tint: "bg-growth/15 text-growth",
+    },
   ];
 
-  const recentClasses = [
-    { name: "Physics 101 - Mechanics", students: 32, attendance: "94%", nextSession: "Today 2:00 PM" },
-    { name: "Advanced Quantum Physics", students: 18, attendance: "89%", nextSession: "Tomorrow 10:00 AM" },
-    { name: "Lab: Wave Motion", students: 24, attendance: "91%", nextSession: "Wed 3:00 PM" }
-  ];
-
-  const upcomingEvents = [
-    { title: "Physics Department Meeting", time: "Today 4:00 PM", type: "meeting" },
-    { title: "Student Progress Review", time: "Tomorrow 11:00 AM", type: "review" },
-    { title: "Lab Equipment Maintenance", time: "Friday 2:00 PM", type: "maintenance" }
-  ];
-
-  const announcements = [
-    { message: "New lab equipment has arrived!", time: "2 hours ago", priority: "high" },
-    { message: "Student evaluation forms due next week", time: "5 hours ago", priority: "medium" },
-    { message: "Physics competition registration open", time: "1 day ago", priority: "low" }
-  ];
+  const attendancePct = loading || typeof dashboardData.avgAttendance !== "number"
+    ? 0
+    : Math.max(0, Math.min(100, dashboardData.avgAttendance));
+  const ringCircumference = 2 * Math.PI * 40;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="relative min-h-screen bg-background overflow-hidden p-4 md:p-6">
+      <EduBackdrop />
+      <div className="relative max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row gap-4 md:gap-20 items-start md:items-center">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Physics Teacher Dashboard
-            </h1>
-            <p className="text-slate-600 mt-1">Manage your classes and track student progress</p>
-          </div>
-
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+            Teacher Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">Manage your classes and track student progress</p>
         </div>
 
         {/* Welcome Section */}
-        <Card className="relative overflow-hidden bg-gradient-to-r from-amber-400 via-yellow-400 to-orange-400 border-0 shadow-xl">
+        <Card className="relative overflow-hidden border-0 bg-primary shadow-sm">
           <CardContent className="p-6 md:p-8">
             <div className="flex items-center justify-between">
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-slate-800">
-                    Welcome back, Professor! {name_Teacher}👋
+                  <h2 className="text-xl md:text-2xl font-bold text-primary-foreground">
+                    Welcome back, {name_Teacher}
                   </h2>
-                  <p className="text-slate-700 mt-2 text-lg">
-                    Ready to inspire the next generation of physicists?
+                  <p className="text-primary-foreground/80 mt-2">
+                    Ready to inspire the next generation of learners?
                   </p>
                 </div>
                 <div className="flex gap-3">
                   <CreateClassPOP />
-                  <Button variant="outline" className="bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    View Schedule
-                  </Button>
+                  <Link href="/dashboard/teacher/classes">
+                    <Button variant="outline" className="bg-white/10 backdrop-blur-sm border-white/30 text-primary-foreground hover:bg-white/20 hover:text-primary-foreground cursor-pointer">
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Browse Classes
+                    </Button>
+                  </Link>
                 </div>
               </div>
-              <div className="hidden md:block relative">
-                <div className="w-64 h-48 relative">
-                  <Image
-                    src="/Teacher.svg"
-                    alt="Welcome Teacher"
-                    width={250}
-                    height={200}
-                    className="object-contain"
-                  />
+              <div className="hidden md:flex items-center gap-5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl px-6 py-5 shrink-0">
+                <div className="relative w-24 h-24 shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-24 h-24 -rotate-90">
+                    <circle cx="50" cy="50" r="40" stroke="white" strokeOpacity="0.15" strokeWidth="8" fill="none" />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      stroke="white"
+                      strokeWidth="8"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={ringCircumference}
+                      strokeDashoffset={ringCircumference - (attendancePct / 100) * ringCircumference}
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold text-primary-foreground leading-none">
+                      {loading ? "…" : `${attendancePct}%`}
+                    </span>
+                    <span className="text-[10px] text-primary-foreground/70 mt-1">Attendance</span>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-2xl font-bold text-primary-foreground leading-none">
+                      {loading ? "…" : dashboardData.totalStudents}
+                    </p>
+                    <p className="text-xs text-primary-foreground/70 mt-1">Students growing with you</p>
+                  </div>
+                  <div className="h-px bg-white/15" />
+                  <div>
+                    <p className="text-sm font-semibold text-primary-foreground leading-none">
+                      {loading ? "…" : dashboardData.upcomingSessions} upcoming
+                    </p>
+                    <p className="text-xs text-primary-foreground/70 mt-1">
+                      {nextSessionDate
+                        ? `Next: ${new Date(nextSessionDate).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}`
+                        : "No session scheduled"}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
         {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {quickStats.map((stat, index) => (
-            <Card key={index} className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-              <CardContent className="p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {quickStats.map((stat) => (
+            <Card key={stat.title} className="border border-border shadow-sm">
+              <CardContent className="p-5">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-slate-600">{stat.title}</p>
-                    <p className="text-3xl font-bold text-slate-900 mt-2">{stat.value}</p>
-                    <p className="text-xs text-slate-500 mt-2">{stat.change}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                    <p className="text-2xl font-bold text-foreground mt-1">{stat.value}</p>
+                    {stat.note && <p className="text-xs text-muted-foreground mt-1 truncate">{stat.note}</p>}
                   </div>
-                  <div className={`p-3 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                    <div className="text-white">{stat.icon}</div>
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${stat.tint}`}>
+                    <stat.icon className="h-5 w-5" />
                   </div>
                 </div>
               </CardContent>
@@ -200,182 +215,123 @@ const MainDashTeach = ({ name_Teacher }: { name_Teacher: string }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Classes Overview */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="border border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-blue-600" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <BookOpen className="h-5 w-5 text-primary" />
                   Recent Classes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {recentClasses.map((cls, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200/50 hover:bg-slate-100/50 transition-colors">
-                    <div>
-                      <h3 className="font-semibold text-slate-800">{cls.name}</h3>
-                      <p className="text-sm text-slate-600">{cls.students} students • Attendance: {cls.attendance}</p>
+              <CardContent className="space-y-3">
+                {!loading && dashboardData.classes.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-6 text-center">
+                    No classes yet — create one to get started.
+                  </p>
+                )}
+                {dashboardData.classes.slice(0, 5).map((cls) => (
+                  <Link
+                    key={cls.id}
+                    href={`/dashboard/teacher/classes/${cls.id}`}
+                    className="flex items-center justify-between p-4 bg-muted/40 rounded-lg border border-border hover:border-primary/30 hover:bg-muted transition-all duration-150 ease-out active:scale-[0.98]"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-foreground truncate">{cls.name}</h3>
+                      <p className="text-sm text-muted-foreground">{cls.students} students</p>
                     </div>
-                    <div className="text-right">
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                        {cls.nextSession}
-                      </Badge>
-                    </div>
-                  </div>
+                    <Badge variant="outline" className="shrink-0">
+                      {cls.nextSession
+                        ? new Date(cls.nextSession).toLocaleDateString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })
+                        : "No session scheduled"}
+                    </Badge>
+                  </Link>
                 ))}
-                <Button variant="outline" className="w-full mt-4">
-                  <Eye className="h-4 w-4 mr-2" />
-                  View All Classes
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Progress Analytics */}
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-purple-600" />
-                  Student Progress Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 bg-emerald-50 rounded-lg">
-                    <Target className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-emerald-700">89%</p>
-                    <p className="text-sm text-emerald-600">Assignment Completion</p>
-                  </div>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <Award className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-blue-700">7.8</p>
-                    <p className="text-sm text-blue-600">Average Grade</p>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <Activity className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-purple-700">92%</p>
-                    <p className="text-sm text-purple-600">Active Participation</p>
-                  </div>
-                  <div className="text-center p-4 bg-amber-50 rounded-lg">
-                    <Zap className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-amber-700">156</p>
-                    <p className="text-sm text-amber-600">Total XP Awarded</p>
-                  </div>
-                </div>
+                <Link href="/dashboard/teacher/classes">
+                  <Button variant="outline" className="w-full mt-2 cursor-pointer">
+                    <Eye className="h-4 w-4 mr-2" />
+                    View All Classes
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
-
-
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="border border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-emerald-600" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Award className="h-5 w-5 text-accent-foreground" />
                   Student Leaderboard
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {dashboardData?.leaderboard?.map((student: User, index: number) => (
-                  <div key={student.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <span className="font-medium text-slate-800">
+              <CardContent className="space-y-2">
+                {!loading && dashboardData.leaderboard.length === 0 && (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No students yet.
+                  </p>
+                )}
+                {dashboardData.leaderboard.map((student, index) => (
+                  <div key={student.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg">
+                    <span className="font-medium text-foreground text-sm">
                       #{index + 1} {student.name}
                     </span>
-                    <span className="text-emerald-600 font-bold">{student.totalXP} XP</span>
+                    <span className="text-primary font-bold text-sm">{student.totalXP} XP</span>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
-
             {/* Upcoming Events */}
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="border border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CalendarDays className="h-5 w-5 text-indigo-600" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <CalendarDays className="h-5 w-5 text-secondary" />
                   Upcoming Events
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {upcomingEvents.map((event, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                    <div className={`p-2 rounded-full ${event.type === 'meeting' ? 'bg-blue-100 text-blue-600' :
-                      event.type === 'review' ? 'bg-emerald-100 text-emerald-600' :
-                        'bg-amber-100 text-amber-600'
-                      }`}>
-                      <Clock className="h-4 w-4" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-800 text-sm">{event.title}</p>
-                      <p className="text-xs text-slate-600">{event.time}</p>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" className="w-full" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Event
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Announcements */}
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5 text-orange-600" />
-                  Announcements
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {announcements.map((announcement, index) => (
-                  <div key={index} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg">
-                    <div className={`p-1 rounded-full ${announcement.priority === 'high' ? 'bg-red-100 text-red-600' :
-                      announcement.priority === 'medium' ? 'bg-amber-100 text-amber-600' :
-                        'bg-slate-100 text-slate-600'
-                      }`}>
-                      {announcement.priority === 'high' ? <AlertCircle className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-slate-800 text-sm">{announcement.message}</p>
-                      <p className="text-xs text-slate-600">{announcement.time}</p>
-                    </div>
-                  </div>
-                ))}
-                <Button variant="outline" className="w-full" size="sm">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  View All
-                </Button>
+                <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-lg text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 shrink-0" />
+                  Events feature coming soon.
+                </div>
+                <Link href="/dashboard/events">
+                  <Button variant="outline" className="w-full cursor-pointer" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Event
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
             {/* Quick Actions */}
-            <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg">
+            <Card className="border border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-600" />
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <ClipboardList className="h-5 w-5 text-primary" />
                   Quick Actions
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Create Assignment
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Schedule Session
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Award className="h-4 w-4 mr-2" />
-                  Grade Submissions
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Send Message
-                </Button>
+                <Link href="/dashboard/teacher/schools">
+                  <Button variant="outline" className="w-full justify-start cursor-pointer" size="sm">
+                    <School2 className="h-4 w-4 mr-2" />
+                    Manage Schools
+                  </Button>
+                </Link>
+                <Link href="/dashboard/teacher/classes">
+                  <Button variant="outline" className="w-full justify-start cursor-pointer" size="sm">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    Manage Classes
+                  </Button>
+                </Link>
+                <Link href="/dashboard/studensprogress">
+                  <Button variant="outline" className="w-full justify-start cursor-pointer" size="sm">
+                    <Award className="h-4 w-4 mr-2" />
+                    View Student Progress
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
-
-
           </div>
         </div>
       </div>

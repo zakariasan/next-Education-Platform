@@ -1,9 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
+import { Users, BookOpen, ClipboardList, FileText, CalendarClock } from "lucide-react";
 import CreateLessonPOP from "./(components)/CreateLessonPOP";
-import { useParams } from "next/navigation";
 import CreateQuizPOP from "./(components)/CreateQuizzPOP";
 import CreateStudentPOP from "./(components)/CreateStudentPOP";
+
 type HeaderClassProps = {
   tab: "students" | "lessons" | "quizzes";
   setTab: React.Dispatch<
@@ -20,15 +23,17 @@ const HeaderClass = ({
   createLesson,
 }: HeaderClassProps) => {
   const params = useParams();
+  const pathname = usePathname();
   const classId = params.id as string;
 
   const [className, setClassName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // Counts
   const [studentsCount, setStudentsCount] = useState(0);
   const [lessonsCount, setLessonsCount] = useState(0);
   const [quizzesCount, setQuizzesCount] = useState(0);
+  const [examsCount, setExamsCount] = useState(0);
+  const [seancesCount, setSeancesCount] = useState(0);
 
   useEffect(() => {
     const fetchClass = async () => {
@@ -40,6 +45,8 @@ const HeaderClass = ({
         setStudentsCount(data?._count?.students ?? 0);
         setLessonsCount(data?._count?.lessons ?? 0);
         setQuizzesCount(data?._count?.quizzes ?? 0);
+        setExamsCount(data?._count?.exams ?? 0);
+        setSeancesCount(data?._count?.seances ?? 0);
       } catch (err) {
         console.log(err)
         setClassName("Unammed Class");
@@ -50,67 +57,102 @@ const HeaderClass = ({
     if (classId) fetchClass();
   }, [classId]);
 
+  const isOverviewRoute = pathname === `/dashboard/teacher/classes/${classId}`;
+
+  const tabButtonClass = (active: boolean) =>
+    `relative rounded-lg px-4 py-3 flex items-center gap-2 transition-all duration-150 ease-out active:scale-[0.97] ${
+      active
+        ? "bg-primary/15 shadow-sm"
+        : "hover:bg-muted hover:-translate-y-0.5"
+    }`;
+
+  const activeDot = (active: boolean) =>
+    active && (
+      <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary" />
+    );
+
+  const countBadge = (count: number, tint: string) => (
+    <span className={`text-sm font-bold rounded-lg px-2 py-0.5 ${tint}`}>{count}</span>
+  );
+
   return (
     <div>
       {/* Top header */}
       <div className="flex gap-20 items-center">
-        <h1 className="text-2xl font-semibold ">
+        <h1 className="text-2xl font-semibold text-foreground">
           {loading ? "Loading..." : className}
         </h1>
       </div>
 
       {/* Tabs */}
-      <div className="flex justify-between items-center bg-white mt-6 rounded-xl shadow-md space-x-6 px-4">
-        <div className="flex">
+      <div className="flex flex-wrap justify-between items-center bg-card border border-border mt-6 rounded-xl shadow-sm gap-2 px-2 py-2">
+        <div className="flex flex-wrap gap-1">
           {/* Students */}
           <button
             onClick={() => setTab("students")}
-            className={`rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition ${tab === "students"
-                ? "border-b-4 border-[var(--primary-blue)]"
-                : ""
-              }`}
+            className={tabButtonClass(isOverviewRoute && tab === "students")}
           >
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              {studentsCount}
-            </span>
-            <p className="p-2 text-gray-400">Students</p>
+            <Users className="w-4 h-4 text-primary" />
+            {countBadge(studentsCount, "bg-primary/15 text-primary")}
+            <p className="text-sm font-medium text-foreground">Students</p>
+            {activeDot(isOverviewRoute && tab === "students")}
           </button>
 
           {/* Lessons */}
           <button
             onClick={() => setTab("lessons")}
-            className={`rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition ${tab === "lessons" ? "border-b-4 border-[var(--primary-blue)]" : ""
-              }`}
+            className={tabButtonClass(isOverviewRoute && tab === "lessons")}
           >
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              {lessonsCount}
-            </span>
-            <p className="p-2 text-gray-400">Lessons</p>
+            <BookOpen className="w-4 h-4 text-secondary" />
+            {countBadge(lessonsCount, "bg-secondary/20 text-secondary")}
+            <p className="text-sm font-medium text-foreground">Lessons</p>
+            {activeDot(isOverviewRoute && tab === "lessons")}
           </button>
 
           {/* Quizzes */}
           <button
             onClick={() => setTab("quizzes")}
-            className={`rounded p-4 flex gap-1 hover:border-b-3 hover:border-[var(--primary-blue)] transition ${tab === "quizzes" ? "border-b-4 border-[var(--primary-blue)]" : ""
-              }`}
+            className={tabButtonClass(isOverviewRoute && tab === "quizzes")}
           >
-            <span className="rounded bg-[var(--primary-light-blue)] p-2 text-[var(--primary-blue)]">
-              {quizzesCount}
-            </span>
-            <p className="p-2 text-gray-400">Quizzes</p>
+            <ClipboardList className="w-4 h-4 text-accent-foreground" />
+            {countBadge(quizzesCount, "bg-accent/25 text-accent-foreground")}
+            <p className="text-sm font-medium text-foreground">Quizzes</p>
+            {activeDot(isOverviewRoute && tab === "quizzes")}
           </button>
+
+          {/* Exams — real page */}
+          <Link
+            href={`/dashboard/teacher/classes/${classId}/exams`}
+            className={tabButtonClass(pathname?.includes("/exams") ?? false)}
+          >
+            <FileText className="w-4 h-4 text-[var(--primary-wild-watermelon)]" />
+            {countBadge(examsCount, "bg-[var(--primary-wild-watermelon)]/15 text-[var(--primary-wild-watermelon)]")}
+            <p className="text-sm font-medium text-foreground">Exams</p>
+            {activeDot(pathname?.includes("/exams") ?? false)}
+          </Link>
+
+          {/* Seances — real page */}
+          <Link
+            href={`/dashboard/teacher/classes/${classId}/seances`}
+            className={tabButtonClass(pathname?.includes("/seances") ?? false)}
+          >
+            <CalendarClock className="w-4 h-4 text-growth" />
+            {countBadge(seancesCount, "bg-growth/15 text-growth")}
+            <p className="text-sm font-medium text-foreground">Sessions</p>
+            {activeDot(pathname?.includes("/seances") ?? false)}
+          </Link>
         </div>
 
         {/* Create buttons */}
-        {tab === "students" && <CreateStudentPOP />}
+        {isOverviewRoute && tab === "students" && <CreateStudentPOP />}
 
-        {tab === "lessons" && (
+        {isOverviewRoute && tab === "lessons" && (
           <CreateLessonPOP
             createLesson={createLesson}
             setCreateLesson={setCreateLesson}
           />
         )}
-        {tab === "quizzes" && <CreateQuizPOP />}
+        {isOverviewRoute && tab === "quizzes" && <CreateQuizPOP />}
       </div>
     </div>
   );

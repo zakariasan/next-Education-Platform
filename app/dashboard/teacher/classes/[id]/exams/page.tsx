@@ -149,7 +149,7 @@ export default function ExamsList() {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-muted-foreground">Loading exams...</p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function ExamsList() {
     return (
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-500">Error: {error}</p>
+          <p className="text-destructive">Error: {error}</p>
           <Button onClick={fetchExams} className="mt-2">
             Try Again
           </Button>
@@ -170,11 +170,14 @@ export default function ExamsList() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
+    <div className="p-4 md:p-6 space-y-6 bg-background">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Exams</h1>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <FileText className="h-6 w-6 text-destructive" />
+            Exams
+          </h1>
           <p className="text-muted-foreground">
             Manage exams and track student performance
           </p>
@@ -183,7 +186,7 @@ export default function ExamsList() {
           onClick={() =>
             router.push(`/dashboard/teacher/classes/${classId}/exams/new`)
           }
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 cursor-pointer"
         >
           <Plus className="h-4 w-4" />
           Create Exam
@@ -196,7 +199,7 @@ export default function ExamsList() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
+                <FileText className="h-5 w-5 text-primary" />
                 <div>
                   <p className="text-sm font-medium">Total Exams</p>
                   <p className="text-2xl font-bold">{exams.length}</p>
@@ -208,7 +211,7 @@ export default function ExamsList() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-green-500" />
+                <Users className="h-5 w-5 text-secondary" />
                 <div>
                   <p className="text-sm font-medium">Total Results</p>
                   <p className="text-2xl font-bold">
@@ -222,7 +225,7 @@ export default function ExamsList() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
+                <Trophy className="h-5 w-5 text-accent" />
                 <div>
                   <p className="text-sm font-medium">Total XP Available</p>
                   <p className="text-2xl font-bold">
@@ -236,7 +239,7 @@ export default function ExamsList() {
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-purple-500" />
+                <Calendar className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="text-sm font-medium">Upcoming</p>
                   <p className="text-2xl font-bold">
@@ -410,7 +413,7 @@ export default function ExamsList() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDeleteExam(exam.id)}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="mr-2 h-4 w-4" />
                               Delete

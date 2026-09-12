@@ -15,6 +15,8 @@ export default async function Dashboard() {
       redirect("/dashboard/teacher")
     } else if (role === "STUDENT") {
       redirect("/dashboard/student")
+    } else if (role === "ADMIN") {
+      redirect("/dashboard/admin")
     } else {
       redirect("/")
     }

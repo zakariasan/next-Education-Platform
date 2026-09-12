@@ -20,7 +20,10 @@ export async function GET(req: NextRequest,
     const classData = await prisma.class.findUnique({
       where: { id: classId},
       include: {
-        students: true
+        students: true,
+        _count: {
+          select: { students: true, lessons: true, quizzes: true, exams: true, seances: true },
+        },
       }
     });
 

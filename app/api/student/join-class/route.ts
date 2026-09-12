@@ -21,11 +21,19 @@ export async function POST(req: Request) {
 });
   await prisma.class.update({
     where: { id: cls.id },
-    data: { 
+    data: {
       students: {
         connect: { id: session.user.id },
       },
     },
+  });
+
+  await prisma.classEnrollment.upsert({
+    where: {
+      classId_studentId: { classId: cls.id, studentId: session.user.id },
+    },
+    create: { classId: cls.id, studentId: session.user.id },
+    update: {},
   });
 
   return new Response("Enrolled successfully", { status: 200 });

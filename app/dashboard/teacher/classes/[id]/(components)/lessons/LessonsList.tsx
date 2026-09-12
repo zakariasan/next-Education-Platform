@@ -5,17 +5,18 @@ import { Trash2 } from "lucide-react";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Lesson } from "@prisma/client";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { fetcher } from "@/lib/fetcher";
+import EmptyState from "@/components/EmptyState";
 
 const LessonsList = () => {
   const params = useParams();
@@ -27,6 +28,7 @@ const LessonsList = () => {
     mutate,
     isLoading,
   } = useSWR(`/api/lessons?classId=${classId}`, fetcher);
+
   const deleteLesson = async (lessonId: string) => {
     try {
       const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
@@ -39,67 +41,59 @@ const LessonsList = () => {
     }
   };
 
-  // useEffect(() => {
-  //   const fetchLessons = async () => {
-  //     try {
-  //       const res = await fetch(`/api/lessons?classId=${classId}`);
-  //       const data = await res.json();
-  //       setLessons(data || []);
-  //     } catch (error) {
-  //       console.error("Failed to fetch lessons:", error);
-  //       setLessons([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-  //
-  //  fetchLessons();
-  //}, [classId]);
-
-  if (isLoading) return <div>Loading lessons...</div>;
-  if (error) return <div>Error pls wait Loading lessons...</div>;
+  if (isLoading) return <p className="text-sm text-muted-foreground mt-3">Loading lessons...</p>;
+  if (error) return <p className="text-sm text-destructive mt-3">Failed to load lessons.</p>;
 
   return (
-    <div>
-      {lessons.length ? (
-        <Table className="bg-white rounded-lg p-6 mt-3 ">
-          <TableCaption>A list of your Lessons.</TableCaption>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="font-semibold w-1/5">Title</TableHead>
-              <TableHead className="font-semibold w-1/5">Description</TableHead>
-              <TableHead className="font-semibold w-1/5">
-                nbr. Quizzes
-              </TableHead>
-              <TableHead className="font-semibold w-1/5">Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {lessons?.map((lesson: Lesson) => (
-              <TableRow key={lesson.id} className="group p-7">
-                <TableCell className="font-medium ">
-                  <Link href={`${lesson.classId}/lessons/${lesson.id}`}>
-                    {lesson.title}
-                  </Link>
-                </TableCell>
-                <TableCell>{lesson.description}</TableCell>
-                <TableCell>2</TableCell>
-                <TableCell>{lesson.status}</TableCell>
-                <TableCell>
-                  <Trash2
-                    onClick={() => deleteLesson(lesson?.id)}
-                    className="text-[#ff0f0f] opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                    size={22}
-                  />
-                </TableCell>
+    <div className="mt-3">
+      {lessons?.length ? (
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-semibold">Title</TableHead>
+                <TableHead className="font-semibold">Description</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {lessons?.map((lesson: Lesson) => (
+                <TableRow key={lesson.id} className="group">
+                  <TableCell className="font-medium">
+                    <Link
+                      href={`${lesson.classId}/lessons/${lesson.id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {lesson.title}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground truncate max-w-xs">
+                    {lesson.description}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={lesson.status === "PUBLISHED" ? "default" : "outline"}>
+                      {lesson.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Trash2
+                      onClick={() => deleteLesson(lesson?.id)}
+                      className="text-destructive opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      size={18}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        "Create a Lesson"
+        <EmptyState
+          title="No lessons yet"
+          quote="A lesson plan with nothing in it has no pull. Use “Create Lesson” above to give this class its first one."
+        />
       )}
-      he;;
     </div>
   );
 };

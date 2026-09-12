@@ -16,17 +16,20 @@ import {
   Area,
   ReferenceLine,
 } from "recharts";
-import { 
-  Trophy, 
-  Users, 
-  LogOut, 
-  TrendingUp, 
-  BookOpen, 
+import {
+  Trophy,
+  Users,
+  LogOut,
+  TrendingUp,
+  BookOpen,
   Award,
   Calendar,
   Target,
-  BarChart3
+  BarChart3,
+  School2,
+  GraduationCap
 } from "lucide-react";
+import EduBackdrop from "@/components/EduBackdrop";
 
 type CustomTooltipProps = {
   active?: boolean;
@@ -55,11 +58,19 @@ type ProgressEntry = {
   points : number;
 };
 
+type ClassInfoEntry = {
+  classId: string;
+  className: string;
+  teacherName: string;
+  schoolName: string | null;
+};
+
 const DashContentStudent = ({ name }: { name: string }) => {
   const [key, setKey] = useState("");
   const [message, setMessage] = useState("");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
+  const [classesInfo, setClassesInfo] = useState<ClassInfoEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Join class
@@ -77,15 +88,17 @@ const DashContentStudent = ({ name }: { name: string }) => {
     async function fetchData() {
       setLoading(true);
       try {
-        const [resLb, resPr] = await Promise.all([
+        const [resLb, resPr, resCi] = await Promise.all([
           fetch("/api/student/leaderboard"),
           fetch("/api/student/progress"),
+          fetch("/api/student/classes-info"),
         ]);
 
         if (!resLb.ok || !resPr.ok) throw new Error("Failed to fetch data");
 
         const lbData = await resLb.json();
         const prDataRaw = await resPr.json();
+        if (resCi.ok) setClassesInfo(await resCi.json());
 
         // Map raw progress data into ProgressEntry type with cumulative XP
         const prData: ProgressEntry[] = prDataRaw.map((p: ProgressEntry, index: number) => {
@@ -124,12 +137,12 @@ const DashContentStudent = ({ name }: { name: string }) => {
   const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-4 border border-slate-200 rounded-xl shadow-lg">
-          <p className="font-semibold text-slate-800">{`${label}`}</p>
+        <div className="bg-card p-4 border border-border rounded-xl shadow-lg">
+          <p className="font-semibold text-card-foreground">{`${label}`}</p>
           {payload[0].payload.seanceTitle && (
-            <p className="text-sm text-slate-600 mb-1">{`Title: ${payload[0].payload.seanceTitle}`}</p>
+            <p className="text-sm text-muted-foreground mb-1">{`Title: ${payload[0].payload.seanceTitle}`}</p>
           )}
-          <p className="text-blue-600">
+          <p className="text-primary">
             {`Total XP: ${payload[0].value}`}
           </p>
           {payload[0].payload.sessionXP && (
@@ -146,20 +159,28 @@ const DashContentStudent = ({ name }: { name: string }) => {
     return null;
   };
 
+  const stats = [
+    { label: "Total XP", value: totalXP, icon: Award, tint: "bg-primary/15 text-primary" },
+    { label: "Attendance", value: `${attendanceRate}%`, icon: Calendar, tint: "bg-secondary/20 text-secondary" },
+    { label: "Avg XP / Session", value: averageXP, icon: Target, tint: "bg-accent/25 text-accent-foreground" },
+    { label: "Sessions", value: progress.length, icon: BookOpen, tint: "bg-muted text-muted-foreground" },
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="max-w-7xl mx-auto p-6 space-y-8">
+    <div className="relative min-h-screen bg-background overflow-hidden">
+      <EduBackdrop />
+      <div className="relative max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center bg-white/70 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-sm">
-          <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-800 to-blue-800 bg-clip-text text-transparent">
-              Welcome back, {name}! 👋
+        <div className="relative overflow-hidden flex justify-between items-center bg-gradient-to-br from-primary to-secondary rounded-2xl p-6 shadow-sm">
+          <div className="relative">
+            <h1 className="text-2xl font-bold text-primary-foreground tracking-tight">
+              Welcome back, {name}
             </h1>
-            <p className="text-slate-600 mt-1">Ready to continue your learning journey?</p>
+            <p className="text-primary-foreground/80 mt-1 text-sm">Ready to continue your learning journey?</p>
           </div>
           <Button
-            variant="destructive"
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-lg hover:shadow-xl transition-all duration-300"
+            variant="outline"
+            className="relative cursor-pointer bg-white/10 backdrop-blur-sm border-white/30 text-primary-foreground hover:bg-white/20 hover:text-primary-foreground"
             onClick={() => {
               signOut({ callbackUrl: "/auth/login" });
               toast("Logged out successfully");
@@ -169,62 +190,57 @@ const DashContentStudent = ({ name }: { name: string }) => {
           </Button>
         </div>
 
+        {/* My School & Class */}
+        {classesInfo.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {classesInfo.map((info) => (
+              <Card
+                key={info.classId}
+                className="border border-border shadow-sm"
+              >
+                <CardContent className="p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                    <School2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-foreground truncate">
+                      {info.schoolName ?? "No school assigned yet"}
+                    </p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      Class: {info.className}
+                    </p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
+                      <GraduationCap className="w-4 h-4" /> {info.teacherName}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-100 text-sm font-medium">Total XP</p>
-                  <p className="text-3xl font-bold">{totalXP}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {stats.map((s) => (
+            <Card key={s.label} className="border border-border shadow-sm">
+              <CardContent className="p-5 flex items-center gap-4">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${s.tint}`}>
+                  <s.icon className="w-5 h-5" />
                 </div>
-                <Award className="w-10 h-10 text-blue-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-100 text-sm font-medium">Attendance</p>
-                  <p className="text-3xl font-bold">{attendanceRate}%</p>
+                <div className="min-w-0">
+                  <p className="text-xl font-bold text-foreground">{s.value}</p>
+                  <p className="text-xs text-muted-foreground truncate">{s.label}</p>
                 </div>
-                <Calendar className="w-10 h-10 text-green-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-100 text-sm font-medium">Avg XP/Session</p>
-                  <p className="text-3xl font-bold">{averageXP}</p>
-                </div>
-                <Target className="w-10 h-10 text-purple-200" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-100 text-sm font-medium">Sessions</p>
-                  <p className="text-3xl font-bold">{progress.length}</p>
-                </div>
-                <BookOpen className="w-10 h-10 text-orange-200" />
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Join Class Card */}
-        <Card className="bg-white/70 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+        <Card className="border border-border shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Users className="w-6 h-6 text-blue-600" />
+            <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
               Join a New Class
             </CardTitle>
           </CardHeader>
@@ -234,41 +250,38 @@ const DashContentStudent = ({ name }: { name: string }) => {
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="Enter class key"
-                className="flex-1 border-slate-200 focus:border-blue-500 focus:ring-blue-500 rounded-xl"
+                className="flex-1 rounded-xl"
               />
-              <Button 
-                onClick={handleJoin}
-                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl px-8"
-              >
+              <Button onClick={handleJoin} className="rounded-xl px-8 cursor-pointer">
                 Join Class
               </Button>
             </div>
             {message && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-                <p className="text-sm text-blue-800">{message}</p>
+              <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-xl">
+                <p className="text-sm text-primary">{message}</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Enhanced Progress Chart */}
-        <Card className="bg-white/70 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+        <Card className="border border-border shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <TrendingUp className="w-6 h-6 text-green-600" />
+            <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-secondary" />
               Learning Progress Analytics
             </CardTitle>
-            <p className="text-slate-600 text-sm">Track your XP growth over time</p>
+            <p className="text-muted-foreground text-sm">Track your XP growth over time</p>
           </CardHeader>
           <CardContent>
             <div className="h-80">
               {loading ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="animate-pulse flex space-x-4">
-                    <div className="rounded-full bg-slate-200 h-10 w-10"></div>
+                    <div className="rounded-full bg-muted h-10 w-10"></div>
                     <div className="flex-1 space-y-2 py-1">
-                      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                      <div className="h-4 bg-slate-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
                     </div>
                   </div>
                 </div>
@@ -277,8 +290,8 @@ const DashContentStudent = ({ name }: { name: string }) => {
                   <AreaChart data={progress} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                     <defs>
                       <linearGradient id="xpGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.05}/>
+                        <stop offset="5%" stopColor="#3240CD" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#3240CD" stopOpacity={0.05}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
@@ -295,11 +308,11 @@ const DashContentStudent = ({ name }: { name: string }) => {
                     <Area
                       type="monotone"
                       dataKey="xp"
-                      stroke="#3B82F6"
+                      stroke="#3240CD"
                       strokeWidth={3}
                       fill="url(#xpGradient)"
-                      dot={{ fill: '#3B82F6', strokeWidth: 2, r: 6 }}
-                      activeDot={{ r: 8, stroke: '#3B82F6', strokeWidth: 2, fill: '#FFFFFF' }}
+                      dot={{ fill: '#3240CD', strokeWidth: 2, r: 6 }}
+                      activeDot={{ r: 8, stroke: '#3240CD', strokeWidth: 2, fill: '#FFFFFF' }}
                     />
                     {/* Average line */}
                     {progress.length > 0 && (
@@ -314,8 +327,8 @@ const DashContentStudent = ({ name }: { name: string }) => {
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-slate-500">
-                  <BarChart3 className="w-16 h-16 mb-4 text-slate-300" />
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <BarChart3 className="w-16 h-16 mb-4 text-muted-foreground/40" />
                   <p className="text-lg font-medium">No progress data yet</p>
                   <p className="text-sm">Start attending classes to see your progress!</p>
                 </div>
@@ -325,24 +338,24 @@ const DashContentStudent = ({ name }: { name: string }) => {
         </Card>
 
         {/* Enhanced Leaderboard */}
-        <Card className="bg-white/70 backdrop-blur-sm border border-white/20 shadow-xl hover:shadow-2xl transition-all duration-300">
+        <Card className="border border-border shadow-sm">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-bold text-slate-800 flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-yellow-500" />
+            <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-accent-foreground" />
               Class Leaderboard
             </CardTitle>
-            <p className="text-slate-600 text-sm">See how you rank among your classmates</p>
+            <p className="text-muted-foreground text-sm">See how you rank among your classmates</p>
           </CardHeader>
           <CardContent>
             {loading ? (
               <div className="space-y-3">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="animate-pulse flex items-center space-x-4 p-3">
-                    <div className="rounded-full bg-slate-200 h-8 w-8"></div>
+                    <div className="rounded-full bg-muted h-8 w-8"></div>
                     <div className="flex-1 space-y-1">
-                      <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
                     </div>
-                    <div className="h-4 bg-slate-200 rounded w-16"></div>
+                    <div className="h-4 bg-muted rounded w-16"></div>
                   </div>
                 ))}
               </div>
@@ -351,30 +364,27 @@ const DashContentStudent = ({ name }: { name: string }) => {
                 {leaderboard.map((student, idx) => (
                   <div
                     key={student.id}
-                    className={`flex items-center justify-between p-4 rounded-xl transition-all duration-300 hover:scale-[1.02] ${
-                      idx === 0 
-                        ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-2 border-yellow-200' 
-                        : idx === 1
-                        ? 'bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200'
-                        : idx === 2
-                        ? 'bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200'
-                        : 'bg-slate-50 hover:bg-slate-100 border border-slate-200'
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-colors duration-150 ${
+                      idx === 0
+                        ? 'bg-accent/10 border-accent/30'
+                        : idx < 3
+                        ? 'bg-muted/60 border-border'
+                        : 'bg-transparent border-border hover:bg-muted/40'
                     }`}
                   >
                     <div className="flex items-center gap-4">
-                      <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-white ${
-                        idx === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' :
-                        idx === 1 ? 'bg-gradient-to-br from-slate-400 to-slate-600' :
-                        idx === 2 ? 'bg-gradient-to-br from-orange-400 to-orange-600' :
-                        'bg-gradient-to-br from-slate-300 to-slate-500'
+                      <div className={`flex items-center justify-center w-9 h-9 rounded-full font-bold text-sm ${
+                        idx === 0 ? 'bg-accent text-accent-foreground' :
+                        idx < 3 ? 'bg-secondary/30 text-secondary-foreground' :
+                        'bg-muted text-muted-foreground'
                       }`}>
                         {idx + 1}
                       </div>
                       <div>
-                        <span className="font-semibold text-slate-800">
+                        <span className="font-semibold text-foreground">
                           {student.name}
                           {student.name === name && (
-                            <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                            <span className="ml-2 px-2 py-0.5 text-xs bg-primary/15 text-primary rounded-full">
                               You
                             </span>
                           )}
@@ -382,17 +392,17 @@ const DashContentStudent = ({ name }: { name: string }) => {
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className="font-bold text-lg text-blue-600">
+                      <span className="font-bold text-lg text-primary">
                         {student.totalXP}
                       </span>
-                      <span className="text-slate-500 text-sm ml-1">XP</span>
+                      <span className="text-muted-foreground text-sm ml-1">XP</span>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 text-slate-500">
-                <Trophy className="w-16 h-16 mb-4 text-slate-300" />
+              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+                <Trophy className="w-16 h-16 mb-4 text-muted-foreground/40" />
                 <p className="text-lg font-medium">No leaderboard data yet</p>
                 <p className="text-sm">Be the first to earn some XP!</p>
               </div>

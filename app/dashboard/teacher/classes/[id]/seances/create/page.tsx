@@ -121,75 +121,75 @@ export default function CreateSeancePage() {
   const presentCount = Object.values(attendance).filter(status => status === "PRESENT").length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-secondary/10 p-4 md:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header Section */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-white/20 shadow-sm">
-            <CalendarPlus className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-slate-600">New Session</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-card/70 backdrop-blur-sm rounded-full border border-border shadow-sm">
+            <CalendarPlus className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-muted-foreground">New Session</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground via-primary to-primary/80 bg-clip-text text-transparent">
             Create Session
           </h1>
-          <p className="text-slate-600 max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Set up a new learning session and pre-configure student attendance
           </p>
         </div>
 
         {/* Session Details Card */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+        <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
               Session Information
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-slate-700 font-medium">Session Title *</Label>
-                <Input 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Enter session title (e.g., Introduction to Programming)" 
+                <Label className="text-foreground/80 font-medium">Session Title *</Label>
+                <Input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="Enter session title (e.g., Introduction to Programming)"
                   required
-                  className="bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                  className="bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label className="text-slate-700 font-medium flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-slate-500" />
+                <Label className="text-foreground/80 font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   Start Time *
                 </Label>
-                <Input 
-                  type="datetime-local" 
-                  value={startsAt} 
+                <Input
+                  type="datetime-local"
+                  value={startsAt}
                   onChange={(e) => setStartsAt(e.target.value)}
                   required
-                  className="bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                  className="bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
-              
+
               <div className="space-y-2 md:col-span-1">
-                <Label className="text-slate-700 font-medium flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-slate-500" />
+                <Label className="text-foreground/80 font-medium flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
                   End Time (Optional)
                 </Label>
-                <Input 
-                  type="datetime-local" 
-                  value={endsAt} 
-                  onChange={(e) => setEndsAt(e.target.value)} 
-                  className="bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
+                <Input
+                  type="datetime-local"
+                  value={endsAt}
+                  onChange={(e) => setEndsAt(e.target.value)}
+                  className="bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
               {/* Quick Stats */}
               <div className="space-y-2">
-                <Label className="text-slate-700 font-medium">Quick Overview</Label>
+                <Label className="text-foreground/80 font-medium">Quick Overview</Label>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 px-3 py-1">
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-3 py-1">
                     {students.length} Students Enrolled
                   </Badge>
                   <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 px-3 py-1">
@@ -202,46 +202,46 @@ export default function CreateSeancePage() {
         </Card>
 
         {/* Student Attendance Card */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+        <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl font-semibold text-slate-800 flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
+            <CardTitle className="text-xl font-semibold text-foreground flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
               Pre-Configure Attendance
             </CardTitle>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Set initial attendance status for all students (defaults to Present)
             </p>
           </CardHeader>
           <CardContent>
             {students.length === 0 ? (
               <div className="text-center py-8">
-                <Users className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-slate-600 mb-2">Loading Students...</h3>
-                <p className="text-slate-500">
+                <Users className="h-12 w-12 text-muted-foreground/40 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-muted-foreground mb-2">Loading Students...</h3>
+                <p className="text-muted-foreground">
                   Please wait while we load the student roster.
                 </p>
               </div>
             ) : (
               <div className="grid gap-3">
                 {students.map((student) => (
-                  <div 
-                    key={student.id} 
-                    className="flex items-center justify-between p-4 bg-slate-50/50 rounded-lg border border-slate-200/50 hover:bg-slate-100/50 transition-all"
+                  <div
+                    key={student.id}
+                    className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border border-border hover:bg-muted/70 transition-all"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center text-primary-foreground text-sm font-semibold">
                         {student.name?.charAt(0)?.toUpperCase() || "?"}
                       </div>
-                      <span className="font-medium text-slate-800">{student.name}</span>
+                      <span className="font-medium text-foreground">{student.name}</span>
                     </div>
-                    
+
                     <Select
                       value={attendance[student.id] || "PRESENT"}
                       onValueChange={(value) =>
                         setAttendance((prev) => ({ ...prev, [student.id]: value }))
                       }
                     >
-                      <SelectTrigger className="w-40 bg-white/80 backdrop-blur-sm border-slate-200/50 shadow-sm hover:shadow-md transition-all">
+                      <SelectTrigger className="w-40 bg-card/80 backdrop-blur-sm border-border shadow-sm hover:shadow-md transition-all">
                         <SelectValue>
                           <Badge
                             variant="outline"
@@ -251,9 +251,9 @@ export default function CreateSeancePage() {
                           </Badge>
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="bg-white/95 backdrop-blur-sm border-slate-200/50 shadow-xl">
+                      <SelectContent className="bg-card/95 backdrop-blur-sm border-border shadow-xl">
                         {statuses.map((status) => (
-                          <SelectItem key={status} value={status} className="hover:bg-slate-50/80">
+                          <SelectItem key={status} value={status} className="hover:bg-muted/80">
                             <Badge
                               variant="outline"
                               className={`${getStatusColor(status)} font-medium px-3 py-1`}
@@ -272,12 +272,12 @@ export default function CreateSeancePage() {
         </Card>
 
         {/* Action Button */}
-        <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
+        <Card className="bg-card/80 backdrop-blur-sm border-border shadow-xl">
           <CardContent className="p-6">
-            <Button 
-              onClick={handleSave} 
+            <Button
+              onClick={handleSave}
               disabled={loading || !title.trim() || !startsAt}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center gap-2">

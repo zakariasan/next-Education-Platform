@@ -12,9 +12,9 @@ export default async function Dashboard({
   if (!session) redirect("/auth/login");
 
   return (
-    <div className="flex h-screen bg-[var(--medium-grey)]">
-     <SideBar /> 
-         <main className="flex-1 p-3 ml-16 md:ml-64 transition-all duration-300">
+    <div className="flex h-screen bg-background">
+     <SideBar />
+         <main className="flex-1 p-3 ml-16 md:ml-64 transition-all duration-300 overflow-y-auto">
         <div className="w-full">
           {children}
         </div>

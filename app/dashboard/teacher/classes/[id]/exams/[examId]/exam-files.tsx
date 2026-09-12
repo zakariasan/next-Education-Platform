@@ -143,13 +143,13 @@ export default function ExamFiles({
   const getFileIcon = (kind: string) => {
     switch (kind) {
       case "STATEMENT":
-        return <FileText className="h-4 w-4 text-blue-500" />;
+        return <FileText className="h-4 w-4 text-primary" />;
       case "CORRECTION":
-        return <FileCheck className="h-4 w-4 text-green-500" />;
+        return <FileCheck className="h-4 w-4 text-secondary" />;
       case "RUBRIC":
-        return <FileQuestion className="h-4 w-4 text-purple-500" />;
+        return <FileQuestion className="h-4 w-4 text-accent" />;
       default:
-        return <File className="h-4 w-4 text-gray-500" />;
+        return <File className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -159,13 +159,13 @@ export default function ExamFiles({
         return <Badge variant="default">Statement</Badge>;
       case "CORRECTION":
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800">
+          <Badge variant="default" className="bg-secondary/15 text-secondary">
             Correction
           </Badge>
         );
       case "RUBRIC":
         return (
-          <Badge variant="default" className="bg-purple-100 text-purple-800">
+          <Badge variant="default" className="bg-accent/20 text-accent-foreground">
             Rubric
           </Badge>
         );
@@ -310,7 +310,7 @@ export default function ExamFiles({
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(file.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-destructive hover:text-destructive/80"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -331,24 +331,24 @@ export default function ExamFiles({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-blue-500" />
+                <FileText className="h-4 w-4 text-primary" />
                 <span className="font-medium">Statement:</span>
                 <span className="text-muted-foreground">Exam questions</span>
               </div>
               <div className="flex items-center gap-2">
-                <FileCheck className="h-4 w-4 text-green-500" />
+                <FileCheck className="h-4 w-4 text-secondary" />
                 <span className="font-medium">Correction:</span>
                 <span className="text-muted-foreground">Answer keys</span>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <FileQuestion className="h-4 w-4 text-purple-500" />
+                <FileQuestion className="h-4 w-4 text-accent" />
                 <span className="font-medium">Rubric:</span>
                 <span className="text-muted-foreground">Grading criteria</span>
               </div>
               <div className="flex items-center gap-2">
-                <File className="h-4 w-4 text-gray-500" />
+                <File className="h-4 w-4 text-muted-foreground" />
                 <span className="font-medium">Other:</span>
                 <span className="text-muted-foreground">
                   Additional materials

@@ -70,7 +70,7 @@ export default function LessonEditor() {
     [],
   );
   return (
-    <div className="w-full mx-auto p-6 mt-4 bg-white shadow-xl rounded-xl ">
+    <div className="w-full mx-auto p-6 mt-4 bg-card shadow-xl rounded-xl ">
       <div className="flex justify-between">
         <input
           id="title"
@@ -88,14 +88,14 @@ export default function LessonEditor() {
             value={descr}
             onChange={(e) => setDescr(e.target.value)}
             placeholder="Enter the Description"
-            className="py-3 text-gray-400 text-xl focus:outline-none focus:ring-none focus:border-transparent"
+            className="py-3 text-muted-foreground text-xl focus:outline-none focus:ring-none focus:border-transparent"
             required
           />
-          <span className="text-gray-400">
+          <span className="text-muted-foreground">
             <Switch
               checked={status}
               onCheckedChange={() => setStatus(!status)}
-              className={status ? "bg-green-500" : "bg-gray-300"}
+              className={status ? "bg-primary" : "bg-muted"}
             />{" "}
             {status ? "PUBLISH" : "DRAFT"}
           </span>
@@ -110,7 +110,7 @@ export default function LessonEditor() {
       <div className="flex justify-end mt-6 gap-4">
         <Button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-blue-600 text-semibold text-white cursor-pointer rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-primary text-semibold text-primary-foreground cursor-pointer rounded hover:bg-primary/90"
         >
           Save Draft
         </Button>
