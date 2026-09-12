@@ -38,7 +38,7 @@ const StudentModulesList = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       <EduBackdrop />
       <div className="relative max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0b1020] via-[#111a3a] to-primary p-6 md:p-8 shadow-lg text-white">

@@ -59,18 +59,57 @@ Early levels come fast, later ones are earned. `levelInfo(totalXp)` returns
 
 Students never see other students' answers until they have validated the project.
 
+## API
+
+| Route | Who | Purpose |
+| --- | --- | --- |
+| `GET/POST /api/teacher/modules` | teacher, admin | list / create modules (admins see every module and pass `teacherId`) |
+| `GET/PATCH/DELETE /api/teacher/modules/[id]` | teacher, admin | module + projects, status, delete (archives if attempts exist) |
+| `POST /api/teacher/modules/[id]/projects` | teacher, admin | create a draft project (version 1) |
+| `GET/PATCH/DELETE …/projects/[pid]` | teacher, admin | content edits create a new version when PUBLISHED |
+| `POST …/projects/[pid]/publish` | teacher, admin | `{ action: "publish" \| "archive" \| "draft" }` |
+| `PUT …/projects/[pid]/prerequisites` | teacher, admin | replace prerequisites; cycles are rejected |
+| `GET/PATCH /api/teacher/modules/[id]/graph` | teacher, admin | graph preview (drafts included) / pin positions |
+| `GET /api/teacher/modules/[id]/dashboard` | teacher, admin | analytics (see below) |
+| `GET /api/teacher/reviews`, `GET/POST …/[assignmentId]` | teacher, admin | review queue and grading (teachers can spot-check peer criteria) |
+| `GET /api/student/modules` | student | published modules of the student's teachers with progress |
+| `GET /api/student/modules/[id]/graph` | student | Holy Graph nodes/edges/states + level, XP, badges |
+| `GET /api/student/projects/[pid]` | student | statement, rubric (answer keys stripped), own attempt, retry info |
+| `POST …/start`, `POST …/submit` | student | start/retry an attempt; submit answers |
+| `GET /api/student/reviews`, `GET/POST …/[assignmentId]` | student | peer review queue and grading |
+| `GET /api/student/gamification` | student | level info, badges, correction points, recent XP events |
+
+## Holy Graph
+
+`components/gamification/HolyGraph.tsx` renders a circuit board: columns are
+prerequisite depth, common-core chips sit on the central rail (thick solid
+traces), electives branch off on dashed traces. Layout is deterministic
+(`lib/gamification/layout.ts`); teachers can drag a node to pin it (unit
+coordinates stored in `Project.pinX/pinY`). Node states use shape + icon +
+animation, not colour alone. Validation triggers a surge along the newly
+powered traces and an XP float; the student page also toggles to a list view.
+
+## Teacher analytics (`lib/gamification/analytics.ts`)
+
+Per project: attempts, students, validation rate, average actual hours vs
+estimate and the three lowest-scoring criteria. A project is flagged for
+recalibration when the average actual time differs from the estimate by more
+than `HOURS_FLAG_RATIO` (30 %) with at least two finished attempts.
+
 ## Adding a new subject module
 
 1. Copy `prisma/seed-data/physics-mechanics.ts` → `prisma/seed-data/<subject>.ts`.
    Give the module and each project a stable id (`mod-…`, `<prefix>-p01`, …),
    set `isCore`, `estimatedHours`, `xpReward`, `prerequisites` (ids) and a rubric.
-2. Register it in `prisma/seed.ts`: `const MODULES = [PHYSICS_MECHANICS, YOUR_MODULE]`.
+2. Register it in `prisma/seed.ts`: `const MODULES = [PHYSICS_MECHANICS, YOUR_MODULE]`
+   — or call `seedModule(prisma, def, teacherId, { moduleId, idPrefix })` from
+   `prisma/seed-data/seed-module.ts` in your own script.
 3. `npm run db:seed`.
 
-Or skip seeding entirely: teachers create modules and projects from the
-**Modules** section of their dashboard (project builder with live preview and
-a cycle-safe prerequisites picker). Nothing in the graph, layout or XP logic is
-physics-specific.
+Or skip seeding entirely: teachers (and admins, under `/dashboard/admin/modules`)
+create modules and projects from the **Modules** section of their dashboard
+(project builder with live preview and a cycle-safe prerequisites picker).
+Nothing in the graph, layout or XP logic is physics-specific.
 
 ## Tests
 

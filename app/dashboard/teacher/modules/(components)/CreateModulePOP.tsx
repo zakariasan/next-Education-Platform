@@ -1,28 +1,39 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 type ModuleFormValues = { title: string; subject: string; description: string };
+type Teacher = { id: string; name: string; email: string };
 
-const CreateModulePOP = ({ apiBase, onCreated }: { apiBase: string; onCreated?: () => void }) => {
+const CreateModulePOP = ({ apiBase, onCreated, adminMode = false }: { apiBase: string; onCreated?: () => void; adminMode?: boolean }) => {
   const [open, setOpen] = useState(false);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [teacherId, setTeacherId] = useState("");
   const { register, handleSubmit, reset } = useForm<ModuleFormValues>({ defaultValues: { subject: "Physics" } });
 
+  useEffect(() => {
+    if (!adminMode || !open) return;
+    fetch("/api/admin/teachers").then(async (r) => r.ok && setTeachers(await r.json()));
+  }, [adminMode, open]);
+
   const onSubmit = async (data: ModuleFormValues) => {
+    if (adminMode && !teacherId) return toast.error("Pick the owning teacher");
     const res = await fetch(apiBase, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, teacherId: adminMode ? teacherId : undefined }),
     });
     if (res.ok) {
       toast.success("Module created");
       reset({ subject: "Physics" });
+      setTeacherId("");
       setOpen(false);
       onCreated?.();
     } else {
@@ -52,6 +63,19 @@ const CreateModulePOP = ({ apiBase, onCreated }: { apiBase: string; onCreated?: 
             <label className="block text-sm font-medium mb-1">Subject</label>
             <Input {...register("subject")} placeholder="Physics" />
           </div>
+          {adminMode && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Owning teacher</label>
+              <Select value={teacherId} onValueChange={setTeacherId}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="Assign a teacher" /></SelectTrigger>
+                <SelectContent>
+                  {teachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>{t.name} ({t.email})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium mb-1">Description</label>
             <Textarea {...register("description")} placeholder="What will students master by closing this circuit?" />

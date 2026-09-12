@@ -88,7 +88,7 @@ const AdminDashContent = () => {
   ];
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       <EduBackdrop />
       <div className="relative max-w-6xl mx-auto p-6 space-y-6">
         <div className="relative overflow-hidden bg-gradient-to-br from-primary to-secondary rounded-2xl p-6 shadow-sm">

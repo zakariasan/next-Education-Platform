@@ -109,7 +109,7 @@ const MainDashTeach = ({ name_Teacher }: { name_Teacher: string }) => {
   const ringCircumference = 2 * Math.PI * 40;
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden p-4 md:p-6">
+    <div className="relative min-h-screen overflow-hidden p-4 md:p-6">
       <EduBackdrop />
       <div className="relative max-w-7xl mx-auto space-y-6">
         {/* Header */}

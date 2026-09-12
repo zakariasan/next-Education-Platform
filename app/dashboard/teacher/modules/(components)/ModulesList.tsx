@@ -8,9 +8,9 @@ import CreateModulePOP from "./CreateModulePOP";
 import type { ModuleDTO } from "@/lib/gamification/types";
 import StatusPill from "./StatusPill";
 
-type Props = { basePath?: string; apiBase?: string; showTeacher?: boolean };
+type Props = { basePath?: string; apiBase?: string; showTeacher?: boolean; adminMode?: boolean };
 
-const ModulesList = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api/teacher/modules", showTeacher = false }: Props) => {
+const ModulesList = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api/teacher/modules", showTeacher = false, adminMode = false }: Props) => {
   const [modules, setModules] = useState<ModuleDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +49,7 @@ const ModulesList = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api/
               <p className="text-white/70 text-sm mt-0.5">Project tracks with XP, prerequisites and a Holy Graph</p>
             </div>
           </div>
-          <CreateModulePOP apiBase={apiBase} onCreated={load} />
+          <CreateModulePOP apiBase={apiBase} onCreated={load} adminMode={adminMode} />
         </div>
       </div>
 

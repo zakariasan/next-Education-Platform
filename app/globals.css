@@ -154,6 +154,21 @@
   animation: float-slow 5s ease-in-out infinite;
 }
 
+/* === Click sparks === */
+@keyframes spark-fly {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.2); opacity: 0; }
+}
+.spark {
+  position: absolute;
+  width: var(--s, 6px);
+  height: var(--s, 6px);
+  border-radius: 9999px;
+  background: var(--c, var(--primary));
+  box-shadow: 0 0 8px var(--c, var(--primary));
+  animation: spark-fly 0.65s cubic-bezier(0.2, 0.7, 0.3, 1) forwards;
+}
+
 /* === Holy Graph (circuit board) === */
 .hg-board {
   --hg-substrate: oklch(0.955 0.02 250);

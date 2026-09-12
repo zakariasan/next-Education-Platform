@@ -86,7 +86,7 @@ const ModuleJourney = () => {
   const titleOf = (id: string) => data.nodes.find((n) => n.id === id)?.title ?? id;
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative min-h-screen">
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
         <Link href="/dashboard/student/modules" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="w-4 h-4" /> All modules

@@ -30,6 +30,10 @@ import {
   GraduationCap
 } from "lucide-react";
 import EduBackdrop from "@/components/EduBackdrop";
+import Link from "next/link";
+import { CircuitBoard, ArrowRight } from "lucide-react";
+import ProgressOverview from "@/components/gamification/ProgressOverview";
+import type { ProgressSummary } from "@/lib/gamification/student";
 
 type CustomTooltipProps = {
   active?: boolean;
@@ -71,7 +75,12 @@ const DashContentStudent = ({ name }: { name: string }) => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [progress, setProgress] = useState<ProgressEntry[]>([]);
   const [classesInfo, setClassesInfo] = useState<ClassInfoEntry[]>([]);
+  const [gamification, setGamification] = useState<ProgressSummary | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/student/gamification").then(async (r) => r.ok && setGamification(await r.json()));
+  }, []);
 
   // Join class
   async function handleJoin() {
@@ -167,7 +176,7 @@ const DashContentStudent = ({ name }: { name: string }) => {
   ];
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       <EduBackdrop />
       <div className="relative max-w-7xl mx-auto p-6 space-y-6">
         {/* Header */}
@@ -189,6 +198,19 @@ const DashContentStudent = ({ name }: { name: string }) => {
             <LogOut className="w-4 h-4 mr-2" /> Logout
           </Button>
         </div>
+
+        {/* Level, XP and badges */}
+        {gamification && (
+          <Card className="border border-border shadow-sm p-0 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-primary via-secondary to-growth" />
+            <CardContent className="p-5 flex flex-col lg:flex-row lg:items-center gap-4">
+              <div className="flex-1 min-w-0"><ProgressOverview progress={gamification} /></div>
+              <Button asChild className="rounded-xl font-semibold shrink-0">
+                <Link href="/dashboard/student/modules"><CircuitBoard className="w-4 h-4" /> Open the Holy Graph <ArrowRight className="w-4 h-4" /></Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* My School & Class */}
         {classesInfo.length > 0 && (

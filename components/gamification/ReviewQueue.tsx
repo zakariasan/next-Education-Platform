@@ -84,7 +84,7 @@ const ReviewQueue = ({ apiBase, title, subtitle, peerMode = false }: Props) => {
   const shown = items.filter((i) => i.status === tab);
 
   return (
-    <div className="relative min-h-screen bg-background overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden">
       <EduBackdrop />
       <div className="relative max-w-6xl mx-auto p-4 md:p-6 space-y-6">
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-secondary via-secondary to-primary p-6 md:p-8 shadow-lg text-white">

@@ -24,6 +24,7 @@ import EmptyState from "@/components/EmptyState";
 import HolyGraph from "@/components/gamification/HolyGraph";
 import type { GraphPayload, ModuleDetailDTO, ProjectDTO } from "@/lib/gamification/types";
 import StatusPill from "./StatusPill";
+import ModuleAnalytics from "./ModuleAnalytics";
 
 type Props = { basePath?: string; apiBase?: string };
 
@@ -299,6 +300,8 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
           </ul>
         </Card>
       )}
+
+      {mod.projects.length > 0 && <ModuleAnalytics moduleId={moduleId} apiBase={apiBase} basePath={basePath} />}
 
       <div className="flex justify-end">
         <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={removeModule}>
