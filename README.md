@@ -51,7 +51,10 @@ npm test                              # unit tests (vitest)
 2. **First sign-in** (new account, or OAuth) → `/auth/select-role` asks **Teacher** or **Student**. The choice is permanent (the API refuses to change it afterwards).
 3. `/dashboard` reads the role and redirects: `TEACHER → /dashboard/teacher`, `STUDENT → /dashboard/student`, `ADMIN → /dashboard/admin`.
 
-**Admin cannot be picked at sign-up.** It is only granted by the seed (`admin@physiclub.demo`) or by setting `role = 'ADMIN'` on the user row in the database.
+**Admin cannot be picked at sign-up.** Three ways to get it:
+- `/auth/admin` — sign in with any account and enter the **admin setup key** (`ADMIN_SETUP_KEY` env var, min 12 chars; route is disabled when unset). Recommended for production.
+- the seed account `admin@physiclub.demo` (local/demo only),
+- `UPDATE "User" SET role='ADMIN' WHERE email='…'` directly in the database.
 
 Registration with email/password: `/auth/register` → then log in → pick a role.
 
