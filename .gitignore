@@ -46,3 +46,6 @@ next-env.d.ts
 .agents/
 .claude/
 skills-lock.json
+
+# Local database dumps (contain real user data - never commit)
+backups/
