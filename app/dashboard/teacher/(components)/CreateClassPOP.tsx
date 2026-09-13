@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -29,7 +30,9 @@ type ClassFormValues = {
 type SchoolOption = { id: string; name: string };
 
 const CreateClassPOP = () => {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [schools, setSchools] = useState<SchoolOption[]>([]);
   const [loadingSchools, setLoadingSchools] = useState(false);
   const { register, handleSubmit, reset, control } =
@@ -45,19 +48,28 @@ const CreateClassPOP = () => {
   }, [open]);
 
   const onSubmit = async (data: ClassFormValues) => {
-    const res = await fetch("/api/teacher/classes", {
-      method: "POST",
-      body: JSON.stringify({ ...data }),
-      headers: { "Content-Type": "application/json" },
-    });
+    setSaving(true);
+    try {
+      const res = await fetch("/api/teacher/classes", {
+        method: "POST",
+        body: JSON.stringify({ ...data }),
+        headers: { "Content-Type": "application/json" },
+      });
+      const body = await res.json().catch(() => ({}));
 
-    if (res.ok) {
+      if (!res.ok) {
+        toast.error(body?.error ?? "Failed to create class");
+        return;
+      }
+
       toast.success("Class created!");
-
       reset();
       setOpen(false);
-    } else {
-      toast.success("Failed to create class");
+      // The class list is rendered by a server component, so re-run it;
+      // without this the new class only appears after a manual reload.
+      router.refresh();
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -126,8 +138,8 @@ const CreateClassPOP = () => {
             </div>
 
             <div className="flex justify-end">
-              <Button type="submit" className="font-semibold">
-                Create Class
+              <Button type="submit" disabled={saving} className="font-semibold">
+                {saving ? "Creating..." : "Create Class"}
               </Button>
             </div>
           </form>

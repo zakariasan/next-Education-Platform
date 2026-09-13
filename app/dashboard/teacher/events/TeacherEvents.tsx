@@ -15,7 +15,7 @@ const TeacherEvents = ({ admin = false }: { admin?: boolean }) => {
     if (!session?.user?.id) return;
     (async () => {
       const [c, s] = await Promise.all([
-        fetch(admin ? "/api/admin/schools" : `/api/teacher/classes?userId=${session.user.id}`),
+        fetch(admin ? "/api/admin/schools" : "/api/teacher/classes"),
         fetch(admin ? "/api/admin/schools" : "/api/teacher/schools"),
       ]);
       if (admin) {

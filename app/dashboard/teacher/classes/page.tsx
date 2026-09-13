@@ -1,50 +1,21 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import TeacherClasses from "./TeacherClasses";
-import { authOptions } from "@/lib/auth";
-import { getServerSession } from "next-auth";
-import { headers } from "next/headers";
-async function getClasses() {
-  const session = await getServerSession(authOptions);
+import { prisma } from "@/lib/prisma";
+import { currentUser } from "@/lib/gamification/access";
 
-  const headersList = await headers();
-  const userId = session?.user?.id;
-  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL || 'http://localhost:3000';
-  console.log("API URL:", `${baseUrl}/api/teacher/classes?userId=${userId}`);
-  console.log("User ID:", userId);
-  const res = await fetch(`${baseUrl}/api/teacher/classes?userId=${userId}`,
-    {
-      method: "GET",
-      headers: {
-      // Convert Headers object to plain object
-      ...Object.fromEntries(headersList.entries()),
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-    },
-  );
-  console.log("Some Check here: ",res)
-  if (!res.ok) {
-    return { classes: [] };
-  }
-  return res.json();
+// Queries the database directly. This page used to fetch its own API over HTTP
+// and rebuild the base URL from NEXTAUTH_URL / VERCEL_URL, which is both slower
+// and wrong on Vercel (VERCEL_URL has no protocol).
+export default async function Page() {
+  const user = await currentUser();
+  if (!user) redirect("/auth/login");
+
+  const classes = await prisma.class.findMany({
+    where: { teacherId: user.id },
+    include: { teacher: true, students: true },
+    orderBy: [{ archived: "asc" }, { createdAt: "desc" }],
+  });
+
+  return <TeacherClasses classes={classes} />;
 }
-const page = async () => {
-  const classesData = await getClasses();
-
-  let classes;
-  if (Array.isArray(classesData)) {
-    classes = classesData;
-  } else if (classesData?.classes && Array.isArray(classesData.classes)) {
-    classes = classesData.classes;
-  } else {
-    classes = [];
-  }
-  
-  return (
-    <div>
-      <TeacherClasses classes={classes} />
-    </div>
-  );
-};
-
-export default page;

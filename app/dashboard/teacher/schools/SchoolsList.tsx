@@ -5,16 +5,22 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { School2, Users, BookOpenText } from "lucide-react";
 import CreateSchoolPOP from "../(components)/CreateSchoolPOP";
 import EmptyState from "@/components/EmptyState";
+import EditSchoolPOP from "./EditSchoolPOP";
+import { useSession } from "next-auth/react";
 
 type SchoolEntry = {
   id: string;
   name: string;
   description: string | null;
+  createdById: string;
   classes: { id: string }[];
   teachers: { teacherId: string }[];
 };
 
 const SchoolsList = () => {
+  const { data: session } = useSession();
+  const me = session?.user?.id;
+  const isAdmin = session?.user?.role === "ADMIN";
   const [schools, setSchools] = useState<SchoolEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,9 +86,15 @@ const SchoolsList = () => {
             >
               <div className={`h-1.5 w-full bg-gradient-to-r ${tint.grad}`} />
               <CardHeader className="px-4 pt-4">
-                <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tint.grad} text-white shadow-sm flex items-center justify-center`}>
-                  <School2 className="w-5 h-5" />
-                </span>
+                <div className="flex items-start justify-between">
+                  <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tint.grad} text-white shadow-sm flex items-center justify-center`}>
+                    <School2 className="w-5 h-5" />
+                  </span>
+                  {/* Only the creator (or an admin) can rename or delete it. */}
+                  {(isAdmin || school.createdById === me) && (
+                    <EditSchoolPOP school={school} onChanged={fetchSchools} />
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-3">
                 <p className="font-bold text-xl text-foreground truncate">

@@ -1,83 +1,61 @@
+// GET / PUT / DELETE one lesson.
+//
+// Authorisation is the shared creator rule: the teacher who created the lesson
+// may edit or delete it, and an admin may act on any lesson. Enrolled students
+// may read a published lesson.
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { currentUser } from "@/lib/gamification/access";
+import { canManage, requireManage } from "@/lib/access/ownership";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
-) {
+type Ctx = { params: Promise<{ lessonID: string }> };
+
+export async function GET(_req: NextRequest, { params }: Ctx) {
   const { lessonID } = await params;
+  const user = await currentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!lessonID || typeof lessonID !== "string") {
-    NextResponse.json({ error: "Missing classId" }, { status: 400 });
-    throw new Error("Missing Prams lessonID");
-  }
-  try {
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonID },
+  const lesson = await prisma.lesson.findUnique({ where: { id: lessonID } });
+  if (!lesson) return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+
+  if (!(await canManage(user, "lesson", lessonID))) {
+    const enrolled = await prisma.class.findFirst({
+      where: { id: lesson.classId, students: { some: { id: user.id } } },
+      select: { id: true },
     });
-    return NextResponse.json(lesson, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: error }, { status: 500 });
-  }
-}
-
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
-) {
-  const { lessonID } = await params;
-
-  if (!lessonID || typeof lessonID !== "string") {
-    NextResponse.json({ error: "Missing classId" }, { status: 400 });
-    throw new Error("Missing Prams lessonID");
-  }
-
-  try {
-    const { title, description, content, classId, status } = await req.json();
-    if (!title || !content || !classId) {
-      return NextResponse.json(
-        { error: "Missing title or the Content of the Lesson!!" },
-        { status: 400 },
-      );
+    if (!enrolled || lesson.status !== "PUBLISHED") {
+      return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
     }
-
-    const LessonUpdated = await prisma.lesson.update({
-      where: { id: lessonID },
-      data: {
-        title,
-        description,
-        content,
-        status,
-        classId,
-      },
-    });
-
-    return NextResponse.json(LessonUpdated, { status: 201 });
-  } catch (error) {
-    console.log(error);
-    return NextResponse.json(
-      { error: "Error Updating Lesson" },
-      { status: 500 },
-    );
   }
+
+  return NextResponse.json(lesson, { status: 200 });
 }
 
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: Promise<{ lessonID: string }> }, // params is now a Promise
-) {
+export async function PUT(req: NextRequest, { params }: Ctx) {
   const { lessonID } = await params;
+  const { error } = await requireManage("lesson", lessonID);
+  if (error) return error;
 
-  if (!lessonID || typeof lessonID !== "string") {
-    NextResponse.json({ error: "Missing LessonId" }, { status: 400 });
-    throw new Error("Missing Params lessonID");
+  const { title, description, content, status } = await req.json().catch(() => ({}));
+  if (!title || !content) {
+    return NextResponse.json({ error: "Missing title or content" }, { status: 400 });
   }
-  try {
-    const lesson = await prisma.lesson.delete({
-      where: { id: lessonID },
-    });
-    return NextResponse.json(lesson, { status: 200 });
-  } catch (error) {
-    return NextResponse.json({ error: error }, { status: 500 });
-  }
+
+  // classId is deliberately not updatable here: moving a lesson into another
+  // class would need an ownership check on that class too.
+  const updated = await prisma.lesson.update({
+    where: { id: lessonID },
+    data: { title, description, content, status },
+  });
+  return NextResponse.json(updated, { status: 200 });
+}
+
+export async function DELETE(_req: NextRequest, { params }: Ctx) {
+  const { lessonID } = await params;
+  const { error } = await requireManage("lesson", lessonID);
+  if (error) return error;
+
+  await prisma.materials.deleteMany({ where: { lessonId: lessonID } });
+  const lesson = await prisma.lesson.delete({ where: { id: lessonID } });
+  return NextResponse.json(lesson, { status: 200 });
 }

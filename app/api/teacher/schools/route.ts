@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { requireAuthor } from "@/lib/access/ownership";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -17,6 +18,8 @@ export async function GET() {
       classes: { select: { id: true } },
       teachers: { select: { teacherId: true } },
     },
+    // `createdById` is part of the model, so it is already returned; the UI uses
+    // it to show edit controls only to the school's creator.
     orderBy: { createdAt: "desc" },
   });
 
@@ -24,10 +27,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Only teachers and admins may author a school; a student session used to be
+  // enough to create one and attach itself as the school's teacher.
+  const { user, error } = await requireAuthor();
+  if (error) return error;
 
   const { name, description } = await req.json();
   if (!name) {
@@ -41,8 +44,8 @@ export async function POST(req: NextRequest) {
     data: {
       name,
       description,
-      createdById: session.user.id,
-      teachers: { create: { teacherId: session.user.id } },
+      createdById: user.id,
+      teachers: { create: { teacherId: user.id } },
     },
   });
 

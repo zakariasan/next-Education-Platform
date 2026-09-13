@@ -191,6 +191,11 @@ model Class {
   description String?
   key         String  @unique
 
+  // Soft-hide switch. Archived classes stay in the database and keep all their
+  // lessons, quizzes and student work; they are simply filtered out of the
+  // default teacher view. Deleting a non-empty class archives it instead.
+  archived    Boolean @default(false)
+
   teacherId String
   teacher   User   @relation("teacherClasses", fields: [teacherId], references: [id])
   students  User[] @relation("studentClasses")

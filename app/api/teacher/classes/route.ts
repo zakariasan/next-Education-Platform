@@ -2,21 +2,17 @@
 //GET (list classes), POST (create class)
 //
 //   GET POST classes by TEACHER
-import {  getAuthenticated } from "@/lib/auth";
+import { requireAuthor } from "@/lib/access/ownership";
+import { isAdmin } from "@/lib/gamification/access";
 import { prisma } from "@/lib/prisma";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthenticated();
+  const { user, error } = await requireAuthor();
+  if (error) return error;
 
-  if (!user) {
-    return NextResponse.json(
-      { error: "User(Teacher) not Authenticated 😭😔💔 Login!!" },
-      { status: 401 },
-    );
-  }
   const key = nanoid(6);
   try {
     const { name, description, schoolId } = await req.json();
@@ -32,9 +28,11 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
-    const membership = await prisma.schoolTeacher.findUnique({
-      where: { schoolId_teacherId: { schoolId, teacherId: user.id } },
-    });
+    const membership = isAdmin(user)
+      ? true
+      : await prisma.schoolTeacher.findUnique({
+          where: { schoolId_teacherId: { schoolId, teacherId: user.id } },
+        });
     if (!membership) {
       return NextResponse.json(
         { error: "You are not a member of this school" },
@@ -59,26 +57,27 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const { user, error } = await requireAuthor();
+  if (error) return error;
 
-  const user = await getAuthenticated();
+  // The owner comes from the session. It used to come from a `userId` query
+  // parameter, which let any signed-in user list another teacher's classes.
+  const searchParams = req.nextUrl.searchParams;
+  const includeArchived = searchParams.get("includeArchived") === "1";
 
-  const searchParams = req.nextUrl.searchParams
-  const userId = searchParams.get('userId')
-  if(!userId || !user){
-    return Response.json({ error: "User ID required by server" }, { status: 400 })
-  }
-    try {
+  try {
     const classes = await prisma.class.findMany({
       where: {
-        teacherId: userId, // 🔥 Filter only this teacher's classes
+        teacherId: user.id,
+        ...(includeArchived ? {} : { archived: false }),
       },
-      include: { teacher: true,students: true },
-      orderBy: { createdAt: "desc" },
+      include: { teacher: true, students: true },
+      orderBy: [{ archived: "asc" }, { createdAt: "desc" }],
     });
 
     return NextResponse.json(classes, { status: 200 });
-  } catch (error) {
-    console.log("Check back ++++ERROR", error)
-    return NextResponse.json({ classes: [], error }, { status: 500 });
+  } catch (err) {
+    console.error("[teacher/classes GET]", err);
+    return NextResponse.json({ classes: [], error: "Failed to load classes" }, { status: 500 });
   }
 }

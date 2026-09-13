@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import CreateClassPOP from "../(components)/CreateClassPOP";
 import TeacherClass from "./TeacherClass";
-import { BookOpenText } from "lucide-react";
+import { BookOpenText, Eye, EyeOff } from "lucide-react";
 import { Class, User } from "@prisma/client";
 import EmptyState from "@/components/EmptyState";
 
@@ -15,7 +15,11 @@ type TeacherClassesProps = {
 };
 
 const TeacherClasses = ({ classes }: TeacherClassesProps) => {
-  const safeClasses = Array.isArray(classes) ? classes : [];
+  const [showArchived, setShowArchived] = useState(false);
+
+  const all = Array.isArray(classes) ? classes : [];
+  const archivedCount = all.filter((c) => c.archived).length;
+  const safeClasses = showArchived ? all : all.filter((c) => !c.archived);
 
   return (
     <div className="space-y-6">
@@ -33,11 +37,25 @@ const TeacherClasses = ({ classes }: TeacherClassesProps) => {
             <div>
               <h1 className="text-2xl font-bold text-white tracking-tight">My Classes</h1>
               <p className="text-white/70 text-sm mt-0.5">
-                {safeClasses.length} active classroom{safeClasses.length === 1 ? "" : "s"}
+                {all.length - archivedCount} active classroom
+                {all.length - archivedCount === 1 ? "" : "s"}
+                {archivedCount > 0 ? ` · ${archivedCount} archived` : ""}
               </p>
             </div>
           </div>
-          <CreateClassPOP />
+          <div className="flex items-center gap-2">
+            {archivedCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowArchived((v) => !v)}
+                className="flex items-center gap-1.5 rounded-xl bg-white/15 px-3 py-2 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+              >
+                {showArchived ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showArchived ? "Hide archived" : `Show archived (${archivedCount})`}
+              </button>
+            )}
+            <CreateClassPOP />
+          </div>
         </div>
       </div>
 
