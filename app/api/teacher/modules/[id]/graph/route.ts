@@ -30,7 +30,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   const body = await req.json().catch(() => ({}));
   const pins = body.pins && typeof body.pins === "object" ? (body.pins as Record<string, { x: number; y: number } | null>) : {};
   const ops = Object.entries(pins).flatMap(([key, pin]) => {
-    let node: { kind: "PROJECT" | "EXAM" | "QUIZ"; id: string };
+    let node: { kind: "PROJECT" | "EXAM" | "QUIZ" | "MODULE"; id: string };
     try {
       node = parseNodeKey(key);
     } catch {
@@ -43,7 +43,9 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     const where = { id: node.id, moduleId: id };
     if (node.kind === "EXAM") return [prisma.exam.updateMany({ where, data })];
     if (node.kind === "QUIZ") return [prisma.quiz.updateMany({ where, data })];
-    return [prisma.project.updateMany({ where, data })];
+    if (node.kind === "PROJECT") return [prisma.project.updateMany({ where, data })];
+    // MODULE nodes belong to the curriculum graph, not to a module's own graph.
+    return [];
   });
   await prisma.$transaction(ops);
   return NextResponse.json({ ok: true });

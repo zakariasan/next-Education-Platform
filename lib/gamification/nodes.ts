@@ -4,7 +4,7 @@
 // Graph algorithms in ./graph.ts treat the key as an opaque string, which is
 // why they needed no changes when exams and quizzes were added.
 
-export const NODE_KINDS = ["PROJECT", "EXAM", "QUIZ"] as const;
+export const NODE_KINDS = ["PROJECT", "EXAM", "QUIZ", "MODULE"] as const;
 export type NodeKind = (typeof NODE_KINDS)[number];
 
 /** "PROJECT:ckx..." — stable, and safe because cuids contain no colon. */
@@ -31,4 +31,5 @@ export const KIND_LABEL: Record<NodeKind, string> = {
   PROJECT: "Project",
   EXAM: "Exam",
   QUIZ: "Quiz",
+  MODULE: "Module",
 };

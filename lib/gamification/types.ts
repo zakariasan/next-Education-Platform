@@ -91,6 +91,11 @@ export type GraphNode = {
   pinY: number | null;
   prerequisiteIds: string[];
   state: NodeState;
+  /** Core-project progress. Only MODULE nodes set this. */
+  progress?: { done: number; total: number } | null;
+  /** MODULE nodes only: the module has no core projects, so it can never be
+   *  finished and anything placed behind it stays locked. */
+  blocksProgress?: boolean;
   attempt: {
     id: string;
     state: AttemptState;

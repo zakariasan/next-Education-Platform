@@ -1,6 +1,6 @@
 import React from "react";
-import StudentModulesList from "./(components)/StudentModulesList";
+import ModulesView from "./ModulesView";
 
-const page = () => <StudentModulesList />;
+const page = () => <ModulesView />;
 
 export default page;

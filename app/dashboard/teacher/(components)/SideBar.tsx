@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { LayoutDashboard, BookOpenText, ClipboardList, CalendarDays, Users, School2, CircuitBoard, ClipboardCheck } from "lucide-react";
+import { LayoutDashboard, BookOpenText, ClipboardList, CalendarDays, Users, School2, CircuitBoard, ClipboardCheck, Waypoints } from "lucide-react";
 import AppSidebar, { type NavItem } from "@/components/AppSidebar";
 
 const navItems: NavItem[] = [
@@ -8,6 +8,7 @@ const navItems: NavItem[] = [
   { label: "Schools", icon: School2, href: "/dashboard/teacher/schools" },
   { label: "Classes", icon: BookOpenText, href: "/dashboard/teacher/classes" },
   { label: "Modules", icon: CircuitBoard, href: "/dashboard/teacher/modules" },
+  { label: "Course map", icon: Waypoints, href: "/dashboard/teacher/curriculum" },
   { label: "Reviews", icon: ClipboardCheck, href: "/dashboard/teacher/reviews" },
   { label: "Assignments & Quizzes", icon: ClipboardList, href: "/dashboard/teacher/assignments" },
   { label: "Students", icon: Users, href: "/dashboard/teacher/students" },

@@ -152,7 +152,7 @@ model User {
   participations SeanceParticipation[]
 
   //Exam
-  exams       Exam[]       @relation("TeacherExams") // 👈 exams this teacher created
+  exams       Exam[]            @relation("TeacherExams") // 👈 exams this teacher created
   results     ExamResult[]
   examRatings ExamRating[]
 
@@ -167,6 +167,7 @@ model User {
   correctionPoints  Int                @default(0)
   modules           Module[]           @relation("TeacherModules")
   moduleAssignments ModuleAssignment[] @relation("ModuleAssigner")
+  curriculumEdges   CurriculumEdge[]   @relation("CurriculumGraphOwner")
   projectsCreated   Project[]          @relation("TeacherProjects")
   projectAttempts   ProjectAttempt[]   @relation("AttemptStudent")
   reviewedAttempts  ProjectAttempt[]   @relation("AttemptReviewer")
@@ -423,6 +424,11 @@ model Exam {
   module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   moduleId String?
 
+  /// A milestone exam is a node of the CURRICULUM graph rather than of one
+  /// module's graph: it gates the step from one ring of modules to the next.
+  /// Milestone exams ignore moduleId.
+  isMilestone Boolean @default(false)
+
   /// Percent of maxScore a student needs for this node to count as validated.
   passPercent Int @default(50)
   /// Order within the module, and an optional teacher-pinned graph position.
@@ -574,8 +580,39 @@ model Module {
   // Prerequisite edges between this module's nodes (projects, exams, quizzes).
   graphEdges GraphEdge[]
 
+  /// Placement in the curriculum graph: order, and an optional pinned position.
+  orderIndex Int    @default(0)
+  pinX       Float?
+  pinY       Float?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// An edge in the curriculum graph, the level above a module's own Holy Graph.
+///
+/// Nodes here are whole modules and milestone exams. `from` must be completed
+/// before `to` unlocks, so a teacher can say "Thermodynamics comes after
+/// Mechanics" once and every class studying both sees the same shape.
+///
+/// Owned by the teacher rather than by a class: modules belong to a teacher, so
+/// their wiring does too. A student's view is built from the modules assigned to
+/// their classes, and any edge whose ends are not both visible is dropped.
+model CurriculumEdge {
+  id String @id @default(cuid())
+
+  owner   User   @relation("CurriculumGraphOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  fromKind GraphNodeKind
+  fromId   String
+  toKind   GraphNodeKind
+  toId     String
+
+  createdAt DateTime @default(now())
+
+  @@unique([ownerId, fromKind, fromId, toKind, toId])
+  @@index([ownerId])
 }
 
 /// One module placed in one class's curriculum.
@@ -604,6 +641,8 @@ enum GraphNodeKind {
   PROJECT
   EXAM
   QUIZ
+  /// Only used by the curriculum graph, where whole modules are the nodes.
+  MODULE
 }
 
 /// A prerequisite edge in a module's Holy Graph: `from` must be completed

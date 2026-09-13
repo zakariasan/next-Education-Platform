@@ -1,6 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, ClipboardList, FileBadge, Hourglass, Lock, Maximize2, Minus, Play, Plus, Pin, Puzzle, X as XIcon } from "lucide-react";
+import { Boxes, Check, ClipboardList, FileBadge, Hourglass, Lock, Maximize2, Minus, Play, Plus, Pin, Puzzle, X as XIcon } from "lucide-react";
 import type { GraphPayload } from "@/lib/gamification/types";
 import type { NodeState } from "@/lib/gamification/graph";
 import { KIND_LABEL, type NodeKind } from "@/lib/gamification/nodes";
@@ -49,12 +49,15 @@ const KIND_ICON: Record<NodeKind, React.ElementType> = {
   PROJECT: Puzzle,
   EXAM: FileBadge,
   QUIZ: ClipboardList,
+  MODULE: Boxes,
 };
 
 /** Corner radius of a node body. Exams are sharp, quizzes are pill-shaped. */
 function bodyRadius(kind: NodeKind, isCore: boolean, h: number) {
   if (kind === "EXAM") return 4;
   if (kind === "QUIZ") return h / 2;
+  // Modules are the heaviest thing on a board, so they get the boldest corners.
+  if (kind === "MODULE") return 20;
   return isCore ? 14 : h / 2;
 }
 
