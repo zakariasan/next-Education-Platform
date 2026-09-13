@@ -68,6 +68,24 @@ export async function PUT(
   if (!cls || cls.teacherId !== session.user.id)
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
+  // Placing an exam in a module makes it a node of that module's Holy Graph.
+  // Only a module the caller can manage may be chosen.
+  let moduleId: string | null | undefined;
+  if (body.moduleId !== undefined) {
+    if (body.moduleId === null || body.moduleId === "") {
+      moduleId = null;
+    } else {
+      const mod = await prisma.module.findUnique({
+        where: { id: String(body.moduleId) },
+        select: { teacherId: true },
+      });
+      if (!mod || (mod.teacherId !== session.user.id && session.user.role !== "ADMIN")) {
+        return NextResponse.json({ error: "Module not found" }, { status: 404 });
+      }
+      moduleId = String(body.moduleId);
+    }
+  }
+
   try {
     const exam = await prisma.exam.update({
       where: { id: examId },
@@ -78,6 +96,10 @@ export async function PUT(
         date: body.date ? new Date(body.date) : null,
         maxScore: body.maxScore,
         maxXP: body.maxXP,
+        ...(moduleId !== undefined ? { moduleId } : {}),
+        ...(typeof body.passPercent === "number"
+          ? { passPercent: Math.min(100, Math.max(0, Math.round(body.passPercent))) }
+          : {}),
       },
       include: {
         files: true,

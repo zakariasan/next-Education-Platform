@@ -1,9 +1,12 @@
 // GET graph payload (teacher preview, drafts included, optional ?studentId=)
-// PATCH { pins: { [projectId]: { x, y } | null } } — pin/unpin node positions
+// PATCH { pins: { [nodeKey]: { x, y } | null } } — pin/unpin node positions.
+// Keys are node keys ("PROJECT:x", "EXAM:y", "QUIZ:z"), so exams and quizzes can
+// be dragged into place just like projects.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { manageableModule, requireTeacherOrAdmin } from "@/lib/gamification/access";
 import { getModuleGraph } from "@/lib/gamification/queries";
+import { parseNodeKey } from "@/lib/gamification/nodes";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -26,12 +29,22 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   const body = await req.json().catch(() => ({}));
   const pins = body.pins && typeof body.pins === "object" ? (body.pins as Record<string, { x: number; y: number } | null>) : {};
-  const ops = Object.entries(pins).map(([projectId, pin]) =>
-    prisma.project.updateMany({
-      where: { id: projectId, moduleId: id },
-      data: pin && Number.isFinite(pin.x) && Number.isFinite(pin.y) ? { pinX: pin.x, pinY: pin.y } : { pinX: null, pinY: null },
-    }),
-  );
+  const ops = Object.entries(pins).flatMap(([key, pin]) => {
+    let node: { kind: "PROJECT" | "EXAM" | "QUIZ"; id: string };
+    try {
+      node = parseNodeKey(key);
+    } catch {
+      return [];
+    }
+    const data =
+      pin && Number.isFinite(pin.x) && Number.isFinite(pin.y)
+        ? { pinX: pin.x, pinY: pin.y }
+        : { pinX: null, pinY: null };
+    const where = { id: node.id, moduleId: id };
+    if (node.kind === "EXAM") return [prisma.exam.updateMany({ where, data })];
+    if (node.kind === "QUIZ") return [prisma.quiz.updateMany({ where, data })];
+    return [prisma.project.updateMany({ where, data })];
+  });
   await prisma.$transaction(ops);
   return NextResponse.json({ ok: true });
 }

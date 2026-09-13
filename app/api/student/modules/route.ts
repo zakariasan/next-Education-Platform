@@ -1,15 +1,17 @@
 // GET published modules visible to the student, with per-module progress.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, visibleTeacherIds } from "@/lib/gamification/access";
+import { requireStudent, visibleModuleIds } from "@/lib/gamification/access";
 
 export async function GET() {
   const { user, error } = await requireStudent();
   if (error) return error;
 
-  const teacherIds = await visibleTeacherIds(user.id);
+  // Only modules a teacher placed in the curriculum of a class this student
+  // is enrolled in.
+  const moduleIds = await visibleModuleIds(user.id);
   const modules = await prisma.module.findMany({
-    where: { status: "PUBLISHED", teacherId: { in: teacherIds } },
+    where: { status: "PUBLISHED", id: { in: moduleIds } },
     include: {
       teacher: { select: { name: true } },
       projects: {

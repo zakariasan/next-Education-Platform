@@ -5,7 +5,9 @@ import type { Prisma } from "@prisma/client";
 import { autoGrade, type AutoConfig } from "./autograde";
 import { BADGES, earnedBadgeCodes } from "./badges";
 import { GAMIFICATION } from "./config";
-import { computeNodeStates, type AttemptSummary, type Edge } from "./graph";
+import { computeNodeStates } from "./graph";
+import { loadModuleGraphData } from "./module-graph";
+import { nodeKey } from "./nodes";
 import { levelFromXp } from "./level";
 import { hoursBetween, isValidated, weightedScore, xpForValidation } from "./scoring";
 import { awardXp, peerReviewDedupeKey, validationDedupeKey } from "./service";
@@ -22,27 +24,10 @@ export type FinalizeResult = {
 };
 
 async function moduleGraph(tx: Tx, moduleId: string, studentId: string) {
-  const projects = await tx.project.findMany({
-    where: { moduleId, status: "PUBLISHED" },
-    select: { id: true, prerequisites: { select: { id: true } } },
-  });
-  const ids = new Set(projects.map((p) => p.id));
-  const edges: Edge[] = [];
-  for (const p of projects) for (const q of p.prerequisites) if (ids.has(q.id)) edges.push({ from: q.id, to: p.id });
-  const attempts = await tx.projectAttempt.findMany({
-    where: { studentId, projectId: { in: [...ids] } },
-    orderBy: { attemptNumber: "desc" },
-    select: { projectId: true, state: true },
-  });
-  const summary: AttemptSummary[] = [];
-  const seen = new Set<string>();
-  const validated = new Set(attempts.filter((a) => a.state === "VALIDATED").map((a) => a.projectId));
-  for (const a of attempts) {
-    if (seen.has(a.projectId)) continue;
-    seen.add(a.projectId);
-    summary.push({ projectId: a.projectId, state: validated.has(a.projectId) ? "VALIDATED" : a.state });
-  }
-  return { nodeIds: [...ids], edges, summary };
+  // Includes exams and quizzes, not only projects, so validating a project can
+  // unlock an exam that depends on it.
+  const { nodes, edges, summary } = await loadModuleGraphData(tx, moduleId, { studentId });
+  return { nodeIds: nodes.map((n) => n.key), edges, summary };
 }
 
 /** Score every AUTO criterion of an attempt from its answers. */
@@ -211,9 +196,10 @@ export async function finalizeAttempt(tx: Tx, attemptId: string): Promise<Finali
 
   let newlyUnlocked: string[] = [];
   if (graph && before) {
+    const key = nodeKey("PROJECT", attempt.projectId);
     const after = computeNodeStates(graph.nodeIds, graph.edges, [
-      ...graph.summary.filter((s) => s.projectId !== attempt.projectId),
-      { projectId: attempt.projectId, state: "VALIDATED" },
+      ...graph.summary.filter((s) => s.nodeId !== key),
+      { nodeId: key, state: "VALIDATED" },
     ]);
     newlyUnlocked = graph.nodeIds.filter((id) => before.get(id) === "locked" && after.get(id) === "available");
   }

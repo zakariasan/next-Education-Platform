@@ -11,6 +11,7 @@ import HolyGraph, { type Surge } from "@/components/gamification/HolyGraph";
 import type { GraphPayload } from "@/lib/gamification/types";
 import type { ProgressSummary, StudentProjectPanel } from "@/lib/gamification/student";
 import type { NodeState } from "@/lib/gamification/graph";
+import { KIND_LABEL, nodeKey, parseNodeKey } from "@/lib/gamification/nodes";
 
 export type JourneyData = GraphPayload & { progress: ProgressSummary };
 
@@ -71,7 +72,7 @@ const ModuleJourney = () => {
     const fresh = await load();
     if (result?.finalized && result.state === "VALIDATED") {
       setSelected(null);
-      setSurge({ projectId: result.projectId, xp: result.xpAwarded, unlocked: result.newlyUnlocked, at: Date.now() });
+      setSurge({ nodeId: nodeKey("PROJECT", result.projectId), xp: result.xpAwarded, unlocked: result.newlyUnlocked, at: Date.now() });
       setTimeout(() => setSurge(null), 4200);
       if (fresh && fresh.progress.level.level > prevLevel) toast.success(`Level up! You reached level ${fresh.progress.level.level}`, { duration: 6000 });
       for (const code of result.newBadges) {
@@ -151,7 +152,45 @@ const ModuleJourney = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sm:hidden sticky top-0 z-20 flex justify-center pt-2 bg-card"><span className="w-10 h-1.5 rounded-full bg-muted-foreground/30" /></div>
-            <ProjectPanel projectId={selected} onClose={() => setSelected(null)} onChanged={onChanged} />
+            {(() => {
+              const { kind, id } = parseNodeKey(selected);
+              if (kind === "PROJECT") {
+                return <ProjectPanel projectId={id} onClose={() => setSelected(null)} onChanged={onChanged} />;
+              }
+              // Exams and quizzes live on the class pages; the graph links out
+              // to them rather than duplicating their whole UI here.
+              const node = data.nodes.find((n) => n.id === selected);
+              const href = kind === "QUIZ" ? `/dashboard/student/quizzes/${id}` : `/dashboard/student/exams/${id}`;
+              return (
+                <div className="p-6 space-y-4">
+                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground font-semibold">
+                    {KIND_LABEL[kind]}
+                  </p>
+                  <h2 className="text-2xl font-bold tracking-tight">{node?.title ?? "Untitled"}</h2>
+                  <p className="text-sm text-muted-foreground">
+                    {node ? STATE_META[node.state].label : ""}
+                    {node && node.xpReward > 0 ? ` · worth ${node.xpReward} XP` : ""}
+                  </p>
+                  {node && node.prerequisiteIds.length > 0 && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <GitBranch className="w-3 h-3" /> after {node.prerequisiteIds.map(titleOf).join(", ")}
+                    </p>
+                  )}
+                  {node?.state === "locked" ? (
+                    <p className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">
+                      Finish what this depends on to unlock it.
+                    </p>
+                  ) : (
+                    <Link href={href} className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+                      Open {KIND_LABEL[kind].toLowerCase()}
+                    </Link>
+                  )}
+                  <button onClick={() => setSelected(null)} className="block text-sm text-muted-foreground hover:text-foreground">
+                    Close
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

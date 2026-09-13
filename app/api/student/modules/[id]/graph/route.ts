@@ -1,7 +1,7 @@
 // GET Holy Graph payload + progress summary for the current student.
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { requireStudent, visibleTeacherIds } from "@/lib/gamification/access";
+import { requireStudent, visibleModuleIds } from "@/lib/gamification/access";
 import { getModuleGraph } from "@/lib/gamification/queries";
 import { progressSummary } from "@/lib/gamification/student";
 
@@ -10,10 +10,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (error) return error;
   const { id } = await params;
 
-  const mod = await prisma.module.findFirst({
-    where: { id, status: "PUBLISHED", teacherId: { in: await visibleTeacherIds(user.id) } },
-    select: { id: true },
-  });
+  // The module must be published AND assigned to a class this student is in.
+  const visible = await visibleModuleIds(user.id);
+  const mod = visible.includes(id)
+    ? await prisma.module.findFirst({ where: { id, status: "PUBLISHED" }, select: { id: true } })
+    : null;
   if (!mod) return NextResponse.json({ error: "Module not found" }, { status: 404 });
 
   const [graph, progress] = await Promise.all([getModuleGraph(id, { studentId: user.id }), progressSummary(user.id, id)]);

@@ -10,7 +10,8 @@ export type NodeState =
   | "failed";
 
 export type AttemptSummary = {
-  projectId: string;
+  /** A node key from ./nodes.ts, e.g. "PROJECT:ckx...". */
+  nodeId: string;
   state:
     | "NOT_STARTED"
     | "IN_PROGRESS"
@@ -104,9 +105,9 @@ export function computeNodeStates(
   attempts: AttemptSummary[],
 ): Map<string, NodeState> {
   const latest = new Map<string, AttemptSummary>();
-  for (const a of attempts) latest.set(a.projectId, a);
+  for (const a of attempts) latest.set(a.nodeId, a);
   const validated = new Set(
-    attempts.filter((a) => a.state === "VALIDATED").map((a) => a.projectId),
+    attempts.filter((a) => a.state === "VALIDATED").map((a) => a.nodeId),
   );
   const preds = new Map<string, string[]>();
   for (const id of nodeIds) preds.set(id, []);
@@ -131,17 +132,17 @@ export function computeNodeStates(
   return out;
 }
 
-/** Ids newly unlocked by validating `projectId` (given states before validation). */
+/** Node keys newly unlocked by validating `nodeId` (given states before validation). */
 export function newlyUnlocked(
   nodeIds: string[],
   edges: Edge[],
   attemptsBefore: AttemptSummary[],
-  projectId: string,
+  nodeId: string,
 ): string[] {
   const before = computeNodeStates(nodeIds, edges, attemptsBefore);
   const after = computeNodeStates(nodeIds, edges, [
-    ...attemptsBefore.filter((a) => a.projectId !== projectId),
-    { projectId, state: "VALIDATED" },
+    ...attemptsBefore.filter((a) => a.nodeId !== nodeId),
+    { nodeId, state: "VALIDATED" },
   ]);
   return nodeIds.filter(
     (id) => before.get(id) === "locked" && after.get(id) === "available",

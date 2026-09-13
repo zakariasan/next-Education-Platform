@@ -46,8 +46,8 @@ describe("prerequisite unlocking", () => {
 
   it("unlocks direct dependents only when ALL prerequisites are validated", () => {
     const s = computeNodeStates(ids, edges, [
-      { projectId: "a", state: "VALIDATED" },
-      { projectId: "b", state: "VALIDATED" },
+      { nodeId: "a", state: "VALIDATED" },
+      { nodeId: "b", state: "VALIDATED" },
     ]);
     expect(s.get("c")).toBe("available");
     expect(s.get("d")).toBe("available");
@@ -56,16 +56,16 @@ describe("prerequisite unlocking", () => {
 
   it("reflects in-progress and failed attempts", () => {
     const s = computeNodeStates(ids, edges, [
-      { projectId: "a", state: "VALIDATED" },
-      { projectId: "b", state: "IN_PROGRESS" },
-      { projectId: "d", state: "FAILED" },
+      { nodeId: "a", state: "VALIDATED" },
+      { nodeId: "b", state: "IN_PROGRESS" },
+      { nodeId: "d", state: "FAILED" },
     ]);
     expect(s.get("b")).toBe("in_progress");
     expect(s.get("d")).toBe("failed");
   });
 
   it("lists the nodes lit up by a validation", () => {
-    const before = [{ projectId: "a", state: "VALIDATED" as const }, { projectId: "d", state: "VALIDATED" as const }];
+    const before = [{ nodeId: "a", state: "VALIDATED" as const }, { nodeId: "d", state: "VALIDATED" as const }];
     expect(newlyUnlocked(ids, edges, before, "b").sort()).toEqual(["c", "e"]);
   });
 

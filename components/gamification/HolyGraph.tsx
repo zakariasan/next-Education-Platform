@@ -1,11 +1,13 @@
 "use client";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Hourglass, Lock, Maximize2, Minus, Play, Plus, Pin, X as XIcon } from "lucide-react";
+import { Check, ClipboardList, FileBadge, Hourglass, Lock, Maximize2, Minus, Play, Plus, Pin, Puzzle, X as XIcon } from "lucide-react";
 import type { GraphPayload } from "@/lib/gamification/types";
 import type { NodeState } from "@/lib/gamification/graph";
+import { KIND_LABEL, type NodeKind } from "@/lib/gamification/nodes";
 import { HG, layoutNodes, tracePath, type Positioned } from "@/lib/gamification/layout";
 
-export type Surge = { projectId: string; xp: number; unlocked: string[]; at: number };
+/** `nodeId` is a node key such as "PROJECT:ckx...", matching GraphNode.id. */
+export type Surge = { nodeId: string; xp: number; unlocked: string[]; at: number };
 
 type Props = {
   graph: GraphPayload;
@@ -40,6 +42,21 @@ const STATE_COLOR: Record<NodeState, string> = {
   validated: "var(--hg-power)",
   failed: "var(--hg-failed)",
 };
+
+// Each node kind gets its own silhouette and marker so a glance tells a project
+// from an exam from a quiz, independently of the state colour.
+const KIND_ICON: Record<NodeKind, React.ElementType> = {
+  PROJECT: Puzzle,
+  EXAM: FileBadge,
+  QUIZ: ClipboardList,
+};
+
+/** Corner radius of a node body. Exams are sharp, quizzes are pill-shaped. */
+function bodyRadius(kind: NodeKind, isCore: boolean, h: number) {
+  if (kind === "EXAM") return 4;
+  if (kind === "QUIZ") return h / 2;
+  return isCore ? 14 : h / 2;
+}
 
 const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin, className = "" }: Props) => {
   const { placed, width, height } = useMemo(() => layoutNodes(graph.nodes), [graph.nodes]);
@@ -156,7 +173,7 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
 
   const isSurging = surge && Date.now() - surge.at < 4000;
   const surgeEdges = new Set<string>();
-  if (isSurging) for (const e of graph.edges) if (e.from === surge!.projectId && surge!.unlocked.includes(e.to)) surgeEdges.add(`${e.from}->${e.to}`);
+  if (isSurging) for (const e of graph.edges) if (e.from === surge!.nodeId && surge!.unlocked.includes(e.to)) surgeEdges.add(`${e.from}->${e.to}`);
 
   return (
     <div
@@ -210,7 +227,7 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
             const color = STATE_COLOR[p.state];
             const Icon = STATE_ICON[p.state];
             const selected = selectedId === p.id;
-            const ignite = isSurging && (surge!.unlocked.includes(p.id) || surge!.projectId === p.id);
+            const ignite = isSurging && (surge!.unlocked.includes(p.id) || surge!.nodeId === p.id);
             const pinned = p.pinX != null;
             return (
               <g
@@ -219,7 +236,7 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
                 transform={`translate(${x} ${y})`}
                 role="button"
                 tabIndex={0}
-                aria-label={`${p.title}, ${p.isCore ? "core" : "elective"}, ${STATE_LABEL[p.state]}`}
+                aria-label={`${KIND_LABEL[p.kind]}: ${p.title}, ${p.isCore ? "core" : "elective"}, ${STATE_LABEL[p.state]}`}
                 onClick={() => {
                   if (drag.current?.kind === "node" && drag.current.moved) return;
                   onSelect(p.id);
@@ -235,13 +252,13 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
               >
                 {/* Glow for lit components */}
                 {p.state === "validated" && (
-                  <rect x={-6} y={-6} width={HG.nodeW + 12} height={HG.nodeH + 12} rx={p.isCore ? 18 : HG.nodeH / 2 + 6} fill={color} opacity={0.25} filter="url(#hg-glow)" />
+                  <rect x={-6} y={-6} width={HG.nodeW + 12} height={HG.nodeH + 12} rx={bodyRadius(p.kind, p.isCore, HG.nodeH) + 4} fill={color} opacity={0.25} filter="url(#hg-glow)" />
                 )}
                 {p.state === "available" && (
                   <circle cx={HG.nodeW / 2} cy={HG.nodeH / 2} r={30} fill="none" stroke={color} strokeWidth={2} className="hg-ring-pulse" />
                 )}
                 {/* Chip pins (core) */}
-                {p.isCore && (
+                {p.kind === "PROJECT" && p.isCore && (
                   <g fill="var(--hg-chip-stroke)" opacity={0.8}>
                     {[0.25, 0.5, 0.75].map((t) => (
                       <React.Fragment key={t}>
@@ -255,7 +272,7 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
                 <rect
                   width={HG.nodeW}
                   height={HG.nodeH}
-                  rx={p.isCore ? 14 : HG.nodeH / 2}
+                  rx={bodyRadius(p.kind, p.isCore, HG.nodeH)}
                   fill="var(--hg-chip)"
                   stroke={selected ? "var(--hg-available)" : p.state === "locked" ? "var(--hg-locked)" : color}
                   strokeWidth={selected ? 4 : 2.5}
@@ -276,17 +293,27 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
                   <div className="h-full flex flex-col justify-center pr-1">
                     <p className="text-[13px] font-bold leading-tight line-clamp-2" style={{ color: "var(--hg-text)" }}>{p.title}</p>
                     <p className="text-[10px] font-semibold mt-1 tracking-wide" style={{ color: "var(--hg-muted)" }}>
-                      {p.estimatedHours}h · {p.xpReward} XP{!p.isCore ? " · elective" : ""}
+                      {KIND_LABEL[p.kind].toLowerCase()}
+                      {p.estimatedHours > 0 ? ` · ${p.estimatedHours}h` : ""} · {p.xpReward} XP
+                      {p.kind === "PROJECT" && !p.isCore ? " · elective" : ""}
                     </p>
                   </div>
                 </foreignObject>
+                {/* Kind marker */}
+                <g transform={`translate(${HG.nodeW - 26} 8)`}>
+                  <foreignObject x={0} y={0} width={18} height={18}>
+                    <div className="w-[18px] h-[18px] flex items-center justify-center" style={{ color: "var(--hg-muted)" }}>
+                      {React.createElement(KIND_ICON[p.kind], { className: "w-3.5 h-3.5" })}
+                    </div>
+                  </foreignObject>
+                </g>
                 {editable && pinned && (
                   <foreignObject x={HG.nodeW - 22} y={-10} width={20} height={20}>
                     <div className="w-5 h-5 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow"><Pin className="w-3 h-3" /></div>
                   </foreignObject>
                 )}
                 {/* XP float on validation */}
-                {isSurging && surge!.projectId === p.id && surge!.xp > 0 && (
+                {isSurging && surge!.nodeId === p.id && surge!.xp > 0 && (
                   <text x={HG.nodeW / 2} y={-8} textAnchor="middle" fontSize={20} fontWeight={800} fill="var(--hg-power)" className="hg-xp-float" style={{ paintOrder: "stroke", stroke: "var(--hg-substrate)", strokeWidth: 4 }}>
                     +{surge!.xp} XP
                   </text>
@@ -313,6 +340,14 @@ const HolyGraph = ({ graph, selectedId, onSelect, surge, editable = false, onPin
             <span key={s} className="flex items-center gap-1">
               <span className="w-4 h-4 rounded flex items-center justify-center text-white" style={{ background: STATE_COLOR[s] }}><Icon className="w-2.5 h-2.5" strokeWidth={3} /></span>
               {STATE_LABEL[s].split(" — ")[0]}
+            </span>
+          );
+        })}
+        {(Object.keys(KIND_LABEL) as NodeKind[]).map((k) => {
+          const Icon = KIND_ICON[k];
+          return (
+            <span key={k} className="flex items-center gap-1">
+              <Icon className="w-3 h-3" /> {KIND_LABEL[k].toLowerCase()}
             </span>
           );
         })}

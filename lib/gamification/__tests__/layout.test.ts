@@ -4,6 +4,8 @@ import type { GraphNode } from "../types";
 
 const node = (id: string, depth: number, isCore = true, orderIndex = 0, pin?: { x: number; y: number }): GraphNode => ({
   id,
+  kind: "PROJECT",
+  refId: id,
   title: id,
   isCore,
   status: "PUBLISHED",

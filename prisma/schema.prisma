@@ -166,6 +166,7 @@ model User {
   // Gamification: modules, projects, attempts, reviews, XP, badges
   correctionPoints  Int                @default(0)
   modules           Module[]           @relation("TeacherModules")
+  moduleAssignments ModuleAssignment[] @relation("ModuleAssigner")
   projectsCreated   Project[]          @relation("TeacherProjects")
   projectAttempts   ProjectAttempt[]   @relation("AttemptStudent")
   reviewedAttempts  ProjectAttempt[]   @relation("AttemptReviewer")
@@ -210,6 +211,7 @@ model Class {
 
   lessons     Lesson[]
   quizzes     Quiz[]
+  modules     ModuleAssignment[]
   materials   Materials[]
   seances     Seance[]
   exams       Exam[]
@@ -264,6 +266,13 @@ model Quiz {
   duration    Int? // minutes, null = untimed
   xpReward    Int       @default(50) // XP at 100 %
   showAnswers Boolean   @default(true)
+
+  /// Percent needed for this node to count as validated in a module's graph.
+  passPercent Int @default(50)
+  /// Order within the module, and an optional teacher-pinned graph position.
+  orderIndex  Int    @default(0)
+  pinX        Float?
+  pinY        Float?
 
   questions Question[]
   attempts  QuizAttempt[]
@@ -403,6 +412,18 @@ model Exam {
   maxScore    Int       @default(20) // the grading base (e.g., 20 or 100)
   maxXP       Int       @default(100) // how many XP at 100% score
 
+  // Optional placement in a module's Holy Graph. An exam with no module is a
+  // plain class exam and never appears in a graph.
+  module   Module? @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  moduleId String?
+
+  /// Percent of maxScore a student needs for this node to count as validated.
+  passPercent Int @default(50)
+  /// Order within the module, and an optional teacher-pinned graph position.
+  orderIndex  Int    @default(0)
+  pinX        Float?
+  pinY        Float?
+
   files   ExamFile[]
   results ExamResult[]
   ratings ExamRating[]
@@ -536,10 +557,67 @@ model Module {
 
   projects Project[]
   quizzes  Quiz[]
+  exams    Exam[]
   xpEvents XpEvent[]
+
+  // Which classes study this module. A module is written once and assigned to
+  // as many classes as the teacher likes, so two classes can share a module
+  // without duplicating it.
+  assignments ModuleAssignment[]
+
+  // Prerequisite edges between this module's nodes (projects, exams, quizzes).
+  graphEdges GraphEdge[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+/// One module placed in one class's curriculum.
+model ModuleAssignment {
+  id String @id @default(cuid())
+
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId String
+  class    Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId  String
+
+  assignedBy   User   @relation("ModuleAssigner", fields: [assignedById], references: [id])
+  assignedById String
+
+  /// Position of this module within the class's curriculum.
+  orderIndex Int @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([moduleId, classId])
+  @@index([classId])
+}
+
+/// What kind of thing a Holy Graph node is.
+enum GraphNodeKind {
+  PROJECT
+  EXAM
+  QUIZ
+}
+
+/// A prerequisite edge in a module's Holy Graph: `from` must be completed
+/// before `to` unlocks. Either end may be a project, an exam or a quiz, which
+/// is why this is a standalone table rather than a self-relation on Project.
+model GraphEdge {
+  id String @id @default(cuid())
+
+  module   Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  moduleId String
+
+  fromKind GraphNodeKind
+  fromId   String
+  toKind   GraphNodeKind
+  toId     String
+
+  createdAt DateTime @default(now())
+
+  @@unique([moduleId, fromKind, fromId, toKind, toId])
+  @@index([moduleId])
 }
 
 // Project identity: graph node. Editable content lives in ProjectVersion so

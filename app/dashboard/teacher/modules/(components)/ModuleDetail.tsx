@@ -3,6 +3,8 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { nodeKey, parseNodeKey } from "@/lib/gamification/nodes";
+import ModuleClasses from "./ModuleClasses";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -71,11 +73,14 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
     load();
   }, [load]);
 
+  // Prerequisites are node keys, which may name an exam or a quiz as well as a
+  // project, so titles come from the graph payload rather than the project list.
   const titleOf = useMemo(() => {
     const map = new Map<string, string>();
-    for (const p of mod?.projects ?? []) map.set(p.id, p.version?.title ?? "Untitled");
+    for (const n of graph?.nodes ?? []) map.set(n.id, n.title);
+    for (const p of mod?.projects ?? []) map.set(nodeKey("PROJECT", p.id), p.version?.title ?? "Untitled");
     return (id: string) => map.get(id) ?? "?";
-  }, [mod]);
+  }, [graph, mod]);
 
   const stats = useMemo(() => {
     const ps = mod?.projects ?? [];
@@ -208,6 +213,8 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
         ))}
       </div>
 
+      <ModuleClasses moduleId={moduleId} apiBase={apiBase} />
+
       {graph && graph.nodes.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
@@ -219,7 +226,21 @@ const ModuleDetail = ({ basePath = "/dashboard/teacher/modules", apiBase = "/api
               <Button size="sm" variant="ghost" onClick={resetPins}><Undo2 className="w-3.5 h-3.5" /> Auto layout</Button>
             )}
           </div>
-          <HolyGraph graph={graph} onSelect={(id) => router.push(`${basePath}/${moduleId}/projects/${id}`)} editable onPin={pin} className="h-[420px]" />
+          <HolyGraph
+            graph={graph}
+            onSelect={(key) => {
+              const { kind, id } = parseNodeKey(key);
+              if (kind === "PROJECT") {
+                router.push(`${basePath}/${moduleId}/projects/${id}`);
+                return;
+              }
+              // Exams and quizzes are edited from the class that owns them.
+              toast.info(`Edit this ${kind.toLowerCase()} from its class page.`);
+            }}
+            editable
+            onPin={pin}
+            className="h-[420px]"
+          />
         </div>
       )}
 

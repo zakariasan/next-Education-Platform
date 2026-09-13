@@ -41,6 +41,22 @@ export async function manageableModule(user: SessionUser, moduleId: string) {
   return mod;
 }
 
+/**
+ * Modules a student may open: those assigned to a class they are enrolled in.
+ *
+ * Visibility used to be "every module owned by any teacher of any of my
+ * classes", which leaked a teacher's whole catalogue into every class they
+ * taught. Curriculum is now explicit per class.
+ */
+export async function visibleModuleIds(studentId: string): Promise<string[]> {
+  const rows = await prisma.moduleAssignment.findMany({
+    where: { class: { students: { some: { id: studentId } } } },
+    select: { moduleId: true },
+    distinct: ["moduleId"],
+  });
+  return rows.map((r) => r.moduleId);
+}
+
 /** Ids of teachers whose modules a student can see (teachers of their classes). */
 export async function visibleTeacherIds(studentId: string): Promise<string[]> {
   const classes = await prisma.class.findMany({

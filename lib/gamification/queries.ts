@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { loadModuleGraphData } from "./module-graph";
 import type { AutoConfig } from "./autograde";
-import { computeNodeStates, topologicalDepths, type Edge } from "./graph";
+import { computeNodeStates, topologicalDepths } from "./graph";
 import type {
   CriterionDTO,
   GraphNode,
@@ -91,8 +92,9 @@ export function serializeModule(m: ModuleRow): ModuleDTO {
 }
 
 /**
- * Graph payload for a module. With a studentId, node states reflect that
- * student's attempts and only PUBLISHED projects are included.
+ * Graph payload for a module: its projects, exams and quizzes as one node set,
+ * with the prerequisite edges between them. With a studentId, node states
+ * reflect that student's attempts and results, and drafts are excluded.
  */
 export async function getModuleGraph(
   moduleId: string,
@@ -100,59 +102,64 @@ export async function getModuleGraph(
 ): Promise<GraphPayload | null> {
   const mod = await prisma.module.findUnique({
     where: { id: moduleId },
-    include: {
-      projects: {
-        where: opts.includeDrafts ? { status: { not: "ARCHIVED" } } : { status: "PUBLISHED" },
-        include: { currentVersion: true, prerequisites: { select: { id: true } } },
-        orderBy: { orderIndex: "asc" },
-      },
-    },
+    select: { id: true, title: true, subject: true, description: true },
   });
   if (!mod) return null;
 
-  const ids = new Set(mod.projects.map((p) => p.id));
-  const edges: Edge[] = [];
-  for (const p of mod.projects)
-    for (const q of p.prerequisites) if (ids.has(q.id)) edges.push({ from: q.id, to: p.id });
+  // Projects, exams and quizzes all come back as nodes of one graph.
+  const { nodes: raw, edges, summary } = await loadModuleGraphData(prisma, moduleId, opts);
 
-  const attempts = opts.studentId
-    ? await prisma.projectAttempt.findMany({
-        where: { studentId: opts.studentId, projectId: { in: [...ids] } },
-        orderBy: { attemptNumber: "desc" },
-      })
-    : [];
+  const nodeIds = raw.map((n) => n.key);
+  const depths = topologicalDepths(nodeIds, edges);
+  const byNode = new Map(summary.map((a) => [a.nodeId, a]));
+  const states = computeNodeStates(
+    nodeIds,
+    edges,
+    nodeIds.map((id) => ({ nodeId: id, state: byNode.get(id)?.state ?? ("NOT_STARTED" as const) })),
+  );
+
+  // Attempt detail is only meaningful for projects; exams and quizzes expose
+  // their own result rows through their own pages.
+  const projectIds = raw.filter((n) => n.kind === "PROJECT").map((n) => n.id);
+  const attempts =
+    opts.studentId && projectIds.length
+      ? await prisma.projectAttempt.findMany({
+          where: { studentId: opts.studentId, projectId: { in: projectIds } },
+          orderBy: { attemptNumber: "desc" },
+        })
+      : [];
   const latest = new Map<string, (typeof attempts)[number]>();
   for (const a of attempts) if (!latest.has(a.projectId)) latest.set(a.projectId, a);
   const validated = new Set(attempts.filter((a) => a.state === "VALIDATED").map((a) => a.projectId));
 
-  const nodeIds = [...ids];
-  const depths = topologicalDepths(nodeIds, edges);
-  const states = computeNodeStates(
-    nodeIds,
-    edges,
-    nodeIds.map((id) => ({
-      projectId: id,
-      state: validated.has(id) ? ("VALIDATED" as const) : (latest.get(id)?.state ?? ("NOT_STARTED" as const)),
-    })),
-  );
+  const prereqsOf = new Map<string, string[]>();
+  for (const e of edges) {
+    if (!prereqsOf.has(e.to)) prereqsOf.set(e.to, []);
+    prereqsOf.get(e.to)!.push(e.from);
+  }
 
-  const nodes: GraphNode[] = mod.projects.map((p) => {
-    const a = validated.has(p.id)
-      ? attempts.find((x) => x.projectId === p.id && x.state === "VALIDATED")!
-      : latest.get(p.id);
+  const nodes: GraphNode[] = raw.map((n) => {
+    const a =
+      n.kind === "PROJECT"
+        ? validated.has(n.id)
+          ? attempts.find((x) => x.projectId === n.id && x.state === "VALIDATED")
+          : latest.get(n.id)
+        : undefined;
     return {
-      id: p.id,
-      title: p.currentVersion?.title ?? "Untitled",
-      isCore: p.isCore,
-      status: p.status,
-      estimatedHours: p.currentVersion?.estimatedHours ?? 0,
-      xpReward: p.currentVersion?.xpReward ?? 0,
-      depth: depths.get(p.id) ?? 0,
-      orderIndex: p.orderIndex,
-      pinX: p.pinX,
-      pinY: p.pinY,
-      prerequisiteIds: p.prerequisites.map((q) => q.id).filter((id) => ids.has(id)),
-      state: states.get(p.id) ?? "locked",
+      id: n.key,
+      kind: n.kind,
+      refId: n.id,
+      title: n.title,
+      isCore: n.isCore,
+      status: n.status,
+      estimatedHours: n.estimatedHours,
+      xpReward: n.xpReward,
+      depth: depths.get(n.key) ?? 0,
+      orderIndex: n.orderIndex,
+      pinX: n.pinX,
+      pinY: n.pinY,
+      prerequisiteIds: prereqsOf.get(n.key) ?? [],
+      state: states.get(n.key) ?? "locked",
       attempt: a
         ? {
             id: a.id,

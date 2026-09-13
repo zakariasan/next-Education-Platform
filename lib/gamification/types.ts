@@ -1,5 +1,6 @@
 import type { AutoConfig } from "./autograde";
 import type { Edge, NodeState } from "./graph";
+import type { NodeKind } from "./nodes";
 
 export type CriterionMode = "AUTO" | "TEACHER" | "PEER";
 export type ProjectStatus = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -73,7 +74,12 @@ export type ModuleDTO = {
 export type ModuleDetailDTO = ModuleDTO & { projects: ProjectDTO[] };
 
 export type GraphNode = {
+  /** Node key, e.g. "PROJECT:ckx...". Unique across kinds; edges use these. */
   id: string;
+  /** What this node is. */
+  kind: NodeKind;
+  /** The underlying Project / Exam / Quiz id, for links and detail panels. */
+  refId: string;
   title: string;
   isCore: boolean;
   status: ProjectStatus;
