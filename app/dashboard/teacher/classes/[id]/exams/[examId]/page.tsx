@@ -5,6 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ExamPlacement, { type PlacementValue } from "@/components/exams/ExamPlacement";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -41,6 +43,10 @@ type Exam = {
   date: string | null;
   maxScore: number;
   maxXP: number;
+  moduleId: string | null;
+  isMilestone: boolean;
+  passPercent: number;
+  audiences?: { classId: string }[];
   files: ExamFile[];
   results: ExamResult[];
 };
@@ -53,6 +59,48 @@ export default function ExamDetails() {
   const [exam, setExam] = useState<Exam | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [placement, setPlacement] = useState<PlacementValue | null>(null);
+  const [savingPlacement, setSavingPlacement] = useState(false);
+
+  // Mirrors the exam's stored placement into the editable control.
+  useEffect(() => {
+    if (!exam) return;
+    setPlacement({
+      placement: exam.isMilestone ? "MILESTONE" : exam.moduleId ? "MODULE" : "CLASS",
+      moduleId: exam.moduleId,
+      passPercent: exam.passPercent ?? 50,
+      classIds: (exam.audiences ?? []).map((a) => a.classId),
+    });
+  }, [exam]);
+
+  const savePlacement = async () => {
+    if (!exam || !placement) return;
+    setSavingPlacement(true);
+    try {
+      const res = await fetch(`/api/teacher/classes/${classId}/exams/${examId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: exam.title,
+          description: exam.description,
+          type: exam.type,
+          date: exam.date,
+          maxScore: exam.maxScore,
+          maxXP: exam.maxXP,
+          moduleId: placement.placement === "MODULE" ? placement.moduleId : null,
+          isMilestone: placement.placement === "MILESTONE",
+          passPercent: placement.passPercent,
+          classIds: placement.classIds,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return toast.error(body?.error ?? "Could not save where this exam appears");
+      setExam(body);
+      toast.success("Saved");
+    } finally {
+      setSavingPlacement(false);
+    }
+  };
   const fetchExamDetails = useCallback(async () => {
     try {
       setLoading(true);
@@ -141,6 +189,22 @@ export default function ExamDetails() {
 
         <TabsContent value="overview">
           <div className="grid gap-6 md:grid-cols-2">
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Where this exam appears</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {placement && (
+                  <>
+                    <ExamPlacement value={placement} onChange={setPlacement} ownerClassId={classId} />
+                    <Button size="sm" disabled={savingPlacement} onClick={savePlacement}>
+                      {savingPlacement ? "Saving..." : "Save placement"}
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Exam Information</CardTitle>

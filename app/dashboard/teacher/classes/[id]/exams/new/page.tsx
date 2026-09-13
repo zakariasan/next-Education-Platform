@@ -24,6 +24,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import ExamPlacement, { type PlacementValue } from "@/components/exams/ExamPlacement";
 
 type ExamFormData = {
   title: string;
@@ -40,6 +41,12 @@ export default function CreateExam() {
   const classId = params.id;
 
   const [loading, setLoading] = useState(false);
+  const [placement, setPlacement] = useState<PlacementValue>({
+    placement: "CLASS",
+    moduleId: null,
+    passPercent: 50,
+    classIds: [],
+  });
   const [formData, setFormData] = useState<ExamFormData>({
     title: "",
     description: "",
@@ -62,6 +69,10 @@ export default function CreateExam() {
         body: JSON.stringify({
           ...formData,
           date: formData.date?.toISOString(),
+          moduleId: placement.placement === "MODULE" ? placement.moduleId : null,
+          isMilestone: placement.placement === "MILESTONE",
+          passPercent: placement.passPercent,
+          classIds: placement.classIds,
         }),
       });
 
@@ -172,6 +183,8 @@ export default function CreateExam() {
                 </Popover>
               </div>
             </div>
+
+            <ExamPlacement value={placement} onChange={setPlacement} ownerClassId={classId} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">

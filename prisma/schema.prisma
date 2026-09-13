@@ -216,6 +216,7 @@ model Class {
   materials   Materials[]
   seances     Seance[]
   exams       Exam[]
+  examsSat    ExamClass[]
   enrollments ClassEnrollment[]
   exercises   Exercise[]
   events      Event[]
@@ -392,6 +393,21 @@ model SeanceParticipation {
 // feature of Exam 
 // prisma/schema.prisma
 
+/// One class that sits a given exam.
+model ExamClass {
+  id String @id @default(cuid())
+
+  exam    Exam   @relation(fields: [examId], references: [id], onDelete: Cascade)
+  examId  String
+  class   Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  classId String
+
+  createdAt DateTime @default(now())
+
+  @@unique([examId, classId])
+  @@index([classId])
+}
+
 enum ExamType {
   MIDTERM
   FINAL
@@ -435,6 +451,15 @@ model Exam {
   orderIndex  Int    @default(0)
   pinX        Float?
   pinY        Float?
+
+  /// Classes that sit this exam.
+  ///
+  /// `classId` above is the class the exam was created in and still owns it.
+  /// This join adds any others the teacher chooses to share it with, which is
+  /// what lets one module's exam be taken by every class studying that module.
+  /// The owning class always has a row here too, so visibility only ever needs
+  /// to consult this table.
+  audiences ExamClass[]
 
   files   ExamFile[]
   results ExamResult[]

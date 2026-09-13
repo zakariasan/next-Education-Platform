@@ -46,7 +46,8 @@ export async function loadNodes(db: Db, moduleId: string, includeDrafts = false)
       include: { currentVersion: true },
       orderBy: { orderIndex: "asc" },
     }),
-    db.exam.findMany({ where: { moduleId }, orderBy: { orderIndex: "asc" } }),
+    // Milestone exams belong to the course map, not to a module's own graph.
+    db.exam.findMany({ where: { moduleId, isMilestone: false }, orderBy: { orderIndex: "asc" } }),
     db.quiz.findMany({ where: { moduleId, ...quizWhere }, orderBy: { orderIndex: "asc" } }),
   ]);
 

@@ -26,6 +26,7 @@ export async function GET(
     const exam = await prisma.exam.findUnique({
       where: { id: examId },
       include: {
+        audiences: { select: { classId: true } },
         files: true,
         results: {
           include: {
@@ -97,11 +98,16 @@ export async function PUT(
         maxScore: body.maxScore,
         maxXP: body.maxXP,
         ...(moduleId !== undefined ? { moduleId } : {}),
+        ...(typeof body.isMilestone === "boolean"
+          ? // A milestone exam lives in the course map, never inside one module.
+            { isMilestone: body.isMilestone, ...(body.isMilestone ? { moduleId: null } : {}) }
+          : {}),
         ...(typeof body.passPercent === "number"
           ? { passPercent: Math.min(100, Math.max(0, Math.round(body.passPercent))) }
           : {}),
       },
       include: {
+        audiences: { select: { classId: true } },
         files: true,
         results: {
           include: {
@@ -112,6 +118,22 @@ export async function PUT(
         }
       }
     });
+
+    // Replace the audience when one was sent. The owning class always stays in.
+    if (Array.isArray(body.classIds)) {
+      const allowed = await prisma.class.findMany({
+        where: { id: { in: body.classIds.map(String) }, teacherId: session.user.id },
+        select: { id: true },
+      });
+      const audience = [...new Set([classId, ...allowed.map((c) => c.id)])];
+      await prisma.$transaction([
+        prisma.examClass.deleteMany({ where: { examId, classId: { notIn: audience } } }),
+        prisma.examClass.createMany({
+          data: audience.map((cid) => ({ examId, classId: cid })),
+          skipDuplicates: true,
+        }),
+      ]);
+    }
 
     return NextResponse.json(exam);
   } catch (error) {
