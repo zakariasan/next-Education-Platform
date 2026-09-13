@@ -98,14 +98,14 @@ const HeaderClass = ({
             {activeDot(isOverviewRoute && tab === "students")}
           </button>
 
-          {/* Lessons */}
+          {/* Notes (stored as Lesson rows) */}
           <button
             onClick={() => setTab("lessons")}
             className={tabButtonClass(isOverviewRoute && tab === "lessons")}
           >
             <BookOpen className="w-4 h-4 text-secondary" />
             {countBadge(lessonsCount, "bg-secondary/20 text-secondary")}
-            <p className="text-sm font-medium text-foreground">Lessons</p>
+            <p className="text-sm font-medium text-foreground">Notes</p>
             {activeDot(isOverviewRoute && tab === "lessons")}
           </button>
 

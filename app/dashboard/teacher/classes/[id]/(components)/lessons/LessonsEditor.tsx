@@ -33,10 +33,10 @@ export default function LessonEditor() {
     console.log(res);
     if (res.ok) {
       // redirect or show success
-      toast.success("Lesson Created ");
+      toast.success("Note created");
     } else {
       // handle error
-      toast.error("Lesson Creation failed ");
+      toast.error("Could not create the note");
     }
   };
 
@@ -56,7 +56,7 @@ export default function LessonEditor() {
     {
       type: "paragraph",
 
-      content: "Try Write your lesson here",
+      content: "Write your note here",
     },
   ];
 
@@ -77,7 +77,7 @@ export default function LessonEditor() {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter the title"
+          placeholder="Note title"
           className="py-3 py-2 text-3xl focus:outline-none focus:ring-none focus:border-transparent"
           required
         />
@@ -87,7 +87,7 @@ export default function LessonEditor() {
             type="text"
             value={descr}
             onChange={(e) => setDescr(e.target.value)}
-            placeholder="Enter the Description"
+            placeholder="Short description (optional)"
             className="py-3 text-muted-foreground text-xl focus:outline-none focus:ring-none focus:border-transparent"
             required
           />

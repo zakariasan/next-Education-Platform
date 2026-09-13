@@ -223,6 +223,12 @@ model Class {
   updatedAt   DateTime          @updatedAt
 }
 
+/// Teacher-facing name: a "Note".
+///
+/// A Lesson is written material a teacher keeps against one class. Students
+/// have no page that opens one; the only place a student sees a lesson is its
+/// title printed as a label on a quiz. The UI therefore calls these Notes. The
+/// model keeps its old name so no data, route or API contract has to change.
 model Lesson {
   id          String  @id @default(cuid())
   title       String

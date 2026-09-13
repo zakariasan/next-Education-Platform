@@ -37,7 +37,7 @@ export default function LessonEditorUpdate({ lesson }: LessonEditorProps) {
 
     if (res.ok) {
       // redirect or show success
-      toast.success("✅ Lesson updated successfully");
+      toast.success("Note updated");
     } else {
       // handle error
       toast.error(`❌ Something went wrong`);

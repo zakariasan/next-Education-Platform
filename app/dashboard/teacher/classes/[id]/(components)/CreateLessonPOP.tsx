@@ -9,7 +9,7 @@ const CreateLessonPOP = ({setCreateLesson, createLesson}: CreateLessonProps) => 
 
   return (
         <Button onClick={()=>setCreateLesson(!createLesson)} className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold p-4 rounded transition duration-200">
-      {createLesson? 'View lessons': 'Create Lesson +'}
+      {createLesson ? 'View notes' : 'New note +'}
         </Button>
   );
 };

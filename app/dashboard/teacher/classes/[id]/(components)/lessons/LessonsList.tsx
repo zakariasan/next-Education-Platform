@@ -34,15 +34,15 @@ const LessonsList = () => {
       const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
       if (res.ok) {
         mutate();
-        toast.success("Lesson Deleted successfully");
+        toast.success("Note deleted");
       }
     } catch (err) {
       toast.error(`Lesson Deletion Failed! ${err}`);
     }
   };
 
-  if (isLoading) return <p className="text-sm text-muted-foreground mt-3">Loading lessons...</p>;
-  if (error) return <p className="text-sm text-destructive mt-3">Failed to load lessons.</p>;
+  if (isLoading) return <p className="text-sm text-muted-foreground mt-3">Loading notes...</p>;
+  if (error) return <p className="text-sm text-destructive mt-3">Failed to load notes.</p>;
 
   return (
     <div className="mt-3">
@@ -90,8 +90,8 @@ const LessonsList = () => {
         </div>
       ) : (
         <EmptyState
-          title="No lessons yet"
-          quote="A lesson plan with nothing in it has no pull. Use “Create Lesson” above to give this class its first one."
+          title="No notes yet"
+          quote="An empty notebook teaches nobody. Use “New note” above to write the first one for this class."
         />
       )}
     </div>

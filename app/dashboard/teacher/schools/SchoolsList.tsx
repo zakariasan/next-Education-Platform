@@ -6,6 +6,7 @@ import { School2, Users, BookOpenText } from "lucide-react";
 import CreateSchoolPOP from "../(components)/CreateSchoolPOP";
 import EmptyState from "@/components/EmptyState";
 import EditSchoolPOP from "./EditSchoolPOP";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 
 type SchoolEntry = {
@@ -97,9 +98,12 @@ const SchoolsList = () => {
                 </div>
               </CardHeader>
               <CardContent className="px-4 pb-4 pt-3">
-                <p className="font-bold text-xl text-foreground truncate">
+                <Link
+                  href={`/dashboard/teacher/schools/${school.id}`}
+                  className="font-bold text-xl text-foreground truncate block hover:text-secondary transition-colors"
+                >
                   {school.name}
-                </p>
+                </Link>
                 <p className="text-sm text-muted-foreground border-b border-border mb-3 pb-3 truncate min-h-5">
                   {school.description}
                 </p>
@@ -110,6 +114,14 @@ const SchoolsList = () => {
                   <span className="flex items-center gap-1.5 text-muted-foreground">
                     <Users className="w-4 h-4" /> {school.teachers.length} Teachers
                   </span>
+                </div>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <Link
+                    href={`/dashboard/teacher/schools/${school.id}`}
+                    className={`text-sm font-semibold ${tint.text} hover:underline`}
+                  >
+                    View classes and curriculum →
+                  </Link>
                 </div>
               </CardContent>
             </Card>
