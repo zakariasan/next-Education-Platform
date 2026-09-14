@@ -63,6 +63,8 @@ export async function GET(
       return {
         id: student.id,
         name: student.name,
+        email: student.email,
+        avatar: student.avatar,
         attendance: `${totalPresent}/${totalSeances}`,
         attendancePercentage,
         xp,

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManage } from "@/lib/access/ownership";
+import { studentSelect } from "@/lib/roster";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -16,7 +17,8 @@ export async function GET(_req: NextRequest, { params }: Ctx) {
   const classData = await prisma.class.findUnique({
     where: { id },
     include: {
-      students: true,
+      // Selected, not `true`: the raw User row carries the password hash.
+      students: { select: studentSelect },
       _count: {
         select: { students: true, lessons: true, quizzes: true, exams: true, seances: true },
       },

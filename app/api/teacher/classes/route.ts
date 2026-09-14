@@ -5,6 +5,7 @@
 import { requireAuthor } from "@/lib/access/ownership";
 import { isAdmin } from "@/lib/gamification/access";
 import { prisma } from "@/lib/prisma";
+import { studentSelect } from "@/lib/roster";
 import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 
@@ -71,7 +72,11 @@ export async function GET(req: NextRequest) {
         teacherId: user.id,
         ...(includeArchived ? {} : { archived: false }),
       },
-      include: { teacher: true, students: true },
+      // Selected, not `true`: the raw User row carries the password hash.
+      include: {
+        teacher: { select: { id: true, name: true, email: true, avatar: true } },
+        students: { select: studentSelect },
+      },
       orderBy: [{ archived: "asc" }, { createdAt: "desc" }],
     });
 

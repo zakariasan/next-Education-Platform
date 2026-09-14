@@ -82,7 +82,8 @@ const DashContentStudent = ({ name }: { name: string }) => {
     fetch("/api/student/gamification").then(async (r) => r.ok && setGamification(await r.json()));
   }, []);
 
-  // Join class
+  // Join class. On success the student now belongs to a class, so the join card
+  // has nothing left to do: reload the class list and it disappears.
   async function handleJoin() {
     const res = await fetch("/api/student/join-class", {
       method: "POST",
@@ -90,6 +91,11 @@ const DashContentStudent = ({ name }: { name: string }) => {
       body: JSON.stringify({ key }),
     });
     setMessage(await res.text());
+    if (res.ok) {
+      setKey("");
+      const resCi = await fetch("/api/student/classes-info");
+      if (resCi.ok) setClassesInfo(await resCi.json());
+    }
   }
 
   // Fetch leaderboard and progress
@@ -258,7 +264,8 @@ const DashContentStudent = ({ name }: { name: string }) => {
           ))}
         </div>
 
-        {/* Join Class Card */}
+        {/* Join Class Card — only while the student has no class yet. */}
+        {!loading && classesInfo.length === 0 && (
         <Card className="border border-border shadow-sm">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
@@ -285,6 +292,7 @@ const DashContentStudent = ({ name }: { name: string }) => {
             )}
           </CardContent>
         </Card>
+        )}
 
         {/* Enhanced Progress Chart */}
         <Card className="border border-border shadow-sm">
