@@ -2,14 +2,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStudent } from "@/lib/gamification/access";
-import { eventInclude, serializeEvent, settleEndedSessions } from "@/lib/sessions";
+import { eventInclude, serializeEvent, syncSessions } from "@/lib/sessions";
 
 export async function GET() {
   const { user, error } = await requireStudent();
   if (error) return error;
   const classes = await prisma.class.findMany({ where: { students: { some: { id: user.id } } }, select: { id: true, schoolId: true } });
   const classIds = classes.map((c) => c.id);
-  await settleEndedSessions(classIds);
+  await syncSessions(classIds);
   const events = await prisma.event.findMany({
     where: {
       OR: [

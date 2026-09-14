@@ -9,6 +9,11 @@ export async function DELETE(
   const { seanceId } = await params;
 
   try {
+    const seance = await prisma.seance.findUnique({
+      where: { id: seanceId },
+      select: { eventId: true },
+    });
+
     // Delete participations first to avoid foreign key issues
     await prisma.seanceParticipation.deleteMany({
       where: { seanceId },
@@ -19,6 +24,12 @@ export async function DELETE(
       where: { id: seanceId },
     });
 
+    // The linked Event is the student-facing half of the same session; without
+    // this it would keep showing on the events board after the séance is gone.
+    if (seance?.eventId) {
+      await prisma.event.delete({ where: { id: seance.eventId } });
+    }
+
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("DELETE seance error:", err);
@@ -28,4 +39,3 @@ export async function DELETE(
     );
   }
 }
-

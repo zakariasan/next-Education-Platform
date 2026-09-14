@@ -2,14 +2,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isAdmin, requireTeacherOrAdmin } from "@/lib/gamification/access";
-import { ensureSeanceForEvent, eventInclude, parseEventBody, serializeEvent, settleEndedSessions } from "@/lib/sessions";
+import { ensureSeanceForEvent, eventInclude, parseEventBody, serializeEvent, syncSessions } from "@/lib/sessions";
 
 export async function GET() {
   const { user, error } = await requireTeacherOrAdmin();
   if (error) return error;
   const admin = isAdmin(user);
   const classes = admin ? [] : await prisma.class.findMany({ where: { teacherId: user.id }, select: { id: true, schoolId: true } });
-  await settleEndedSessions(admin ? undefined : classes.map((c) => c.id));
+  await syncSessions(admin ? undefined : classes.map((c) => c.id));
   const events = await prisma.event.findMany({
     where: admin
       ? {}

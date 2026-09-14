@@ -113,3 +113,58 @@ export async function settleEndedSessions(classIds?: string[]): Promise<string[]
   }
   return settled;
 }
+
+/**
+ * Séances created from the class page own no Event, so they were invisible on
+ * the events boards (and never settled). Give every such séance its Event so
+ * both the teacher and the student see the same list. Already-ended séances
+ * that the teacher filled in by hand are marked settled, so the automatic
+ * "everyone present" pass does not rewrite their attendance.
+ */
+export async function backfillEventsForSeances(classIds?: string[]): Promise<string[]> {
+  const orphans = await prisma.seance.findMany({
+    where: { eventId: null, ...(classIds ? { classId: { in: classIds } } : {}) },
+    select: {
+      id: true,
+      title: true,
+      startsAt: true,
+      endsAt: true,
+      classId: true,
+      class: { select: { teacherId: true } },
+      _count: { select: { participations: true } },
+    },
+    take: 100,
+  });
+  const now = new Date();
+  const linked: string[] = [];
+  for (const s of orphans) {
+    const ended = (s.endsAt ?? s.startsAt).getTime() <= now.getTime();
+    await prisma.$transaction(async (tx) => {
+      const fresh = await tx.seance.findUnique({ where: { id: s.id }, select: { eventId: true, settledAt: true } });
+      if (!fresh || fresh.eventId) return;
+      const ev = await tx.event.create({
+        data: {
+          title: s.title?.trim() || "Class session",
+          date: s.startsAt,
+          endsAt: s.endsAt,
+          type: "SESSION",
+          scope: "CLASS",
+          classId: s.classId,
+          createdById: s.class.teacherId,
+        },
+      });
+      await tx.seance.update({
+        where: { id: s.id },
+        data: { eventId: ev.id, settledAt: fresh.settledAt ?? (ended && s._count.participations > 0 ? now : null) },
+      });
+      linked.push(s.id);
+    });
+  }
+  return linked;
+}
+
+/** Everything the events boards need before reading: link loose séances, then settle what ended. */
+export async function syncSessions(classIds?: string[]) {
+  await backfillEventsForSeances(classIds);
+  await settleEndedSessions(classIds);
+}
